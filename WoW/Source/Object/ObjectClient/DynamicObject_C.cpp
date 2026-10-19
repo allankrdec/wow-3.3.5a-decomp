@@ -18,7 +18,7 @@
 // VERIFY: 711b9f81 manual
 // OFFSET: 0x00704F20
 static void AnimEventCallback(CM2Model* model, uint32_t boneId, uint32_t eventId, uint32_t data, const C3Vector* position, uint32_t time, uint64_t param) {
-    CGDynamicObject_C* object = static_cast<CGDynamicObject_C*>(ClntObjMgrObjectPtr(WOWGUID{ param }, TYPEMASK_DYNAMICOBJECT, __FILE__, __LINE__));
+    CGDynamicObject_C* object = static_cast<CGDynamicObject_C*>(ClntObjMgrObjectPtr(WOWGUID{ param }, TYPE_DYNAMICOBJECT, __FILE__, __LINE__));
 
     if (object) {
         object->HandleAnimEvent(eventId, data, position, time);
@@ -32,7 +32,7 @@ static void AnimFinishedCallback(CM2Model* model, uint32_t boneId, uint32_t sequ
         return;
     }
 
-    CGDynamicObject_C* object = static_cast<CGDynamicObject_C*>(ClntObjMgrObjectPtr(WOWGUID{ param }, TYPEMASK_DYNAMICOBJECT, __FILE__, __LINE__));
+    CGDynamicObject_C* object = static_cast<CGDynamicObject_C*>(ClntObjMgrObjectPtr(WOWGUID{ param }, TYPE_DYNAMICOBJECT, __FILE__, __LINE__));
 
     if (!object) {
         return;
@@ -88,11 +88,11 @@ void CGDynamicObject_C::PostInit(uint32_t time, const CClientObjCreate& create, 
 
     this->ObjectVisKitProc();
 
-    if (this->m_dynamicObject->m_bytes[0] != 2 || this->m_dynamicObject->m_caster != ClntObjMgrGetActivePlayer()) {
+    if (this->m_dynamicObject->m_bytes[0] != DYNAMIC_OBJECT_FARSIGHT_FOCUS || this->m_dynamicObject->m_caster != ClntObjMgrGetActivePlayer()) {
         return;
     }
 
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (player && this->m_obj->m_guid.m_guid == player->GetFarSightGuid()) {
         player->SetFarSightFocus(this);
@@ -115,7 +115,7 @@ C44Matrix CGDynamicObject_C::GetMatrix() const {
     matrix.RotateAroundZ(this->GetRawFacing());
 
     if (this->GetTransportGUID()) {
-        CGObject_C* transport = ClntObjMgrObjectPtr(WOWGUID{ this->GetTransportGUID() }, TYPEMASK_OBJECT, __FILE__, __LINE__);
+        CGObject_C* transport = ClntObjMgrObjectPtr(WOWGUID{ this->GetTransportGUID() }, TYPE_OBJECT, __FILE__, __LINE__);
 
         if (transport) {
             matrix *= transport->GetMatrix();
@@ -300,9 +300,9 @@ void CGDynamicObject_C::ModelLoaded(CM2Model* model) {
         model->m_fFlags |= 0x4;
     }
 
-    uint8_t type = this->m_dynamicObject->m_bytes[0];
+    DYNAMIC_OBJECT_TYPE type = static_cast<DYNAMIC_OBJECT_TYPE>(this->m_dynamicObject->m_bytes[0]);
 
-    if (type != 2 && type != 1) {
+    if (type != DYNAMIC_OBJECT_FARSIGHT_FOCUS && type != DYNAMIC_OBJECT_AREA_SPELL) {
         CAaSphere sphere = this->GetObjectModel()->GetBoundingSphere();
 
         if (sphere.r > 0.001f) {

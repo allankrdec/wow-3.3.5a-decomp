@@ -52,7 +52,7 @@ static int32_t Script_SpellCanTargetGlyph(lua_State* L) {
 // VERIFY: 537b33f9 manual
 // OFFSET: 0x00802270
 static int32_t Script_CannotBeResurrected(lua_State* L) {
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (player && (player->m_auraEffectMask[314 / 8] & (1 << (314 % 8)))) {
         lua_pushnumber(L, 1.0);
@@ -107,7 +107,7 @@ static int32_t Script_SpellTargetUnit(lua_State* L) {
 
     CGUnit_C* unit = GetUnitFromName(lua_tolstring(L, 1, nullptr));
 
-    if (unit && (unit->m_obj->m_type & TYPEMASK_UNIT)) {
+    if (unit && (unit->m_obj->m_type & TYPE_UNIT)) {
         WOWGUID guid = unit->m_obj->m_guid;
         Spell_C_TargetUnitByGuid(guid);
         return 0;
@@ -231,7 +231,7 @@ static int32_t Script_CancelUnitBuff(lua_State* L) {
         return 0;
     }
 
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (player && player->m_obj->m_guid == info.m_guid) {
         int32_t slot = static_cast<int32_t>(player->GetSortedAuraSlot(info.m_index, info.m_name, info.m_rank, info.m_filter));
@@ -250,7 +250,7 @@ static int32_t Script_CancelUnitBuff(lua_State* L) {
     }
 
     CGInputControl* input = CGInputControl::GetActive();
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!input || !mover || !input->IsVehicleSeatFlagSet(0x2000000)) {
         return 0;

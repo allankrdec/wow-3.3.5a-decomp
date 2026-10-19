@@ -140,7 +140,7 @@ TSGrowableArray<int32_t> CGSpellBook::m_unlearnedSpells;
 // OFFSET: 0x0053CF10
 void CGSpellBook::UpdateUsable() {
     CGActionBar::UpdateUsable();
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (player) {
         SpellRec spell;
@@ -431,7 +431,7 @@ void CGSpellBook::AddKnownSpell(int32_t spellId, int32_t notify, int32_t replace
         }
 
         if (shapeshift) {
-            CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+            CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
             uint32_t count = s_shapeshiftSpells.Count();
 
             if (replaceSpell) {
@@ -527,7 +527,7 @@ void CGSpellBook::AddKnownSpell(int32_t spellId, int32_t notify, int32_t replace
         return;
     }
 
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
     int32_t updateMultiCast = 0;
     bool tutorialShown = CGTutorial::m_tutorialShown.m_count ? !((CGTutorial::m_tutorialShown.m_bits.m_data[1] >> 14) & 1) : false;
 
@@ -1154,7 +1154,7 @@ int32_t GetSpellSlot(int32_t spellId, int32_t petSpell) {
 // OFFSET: 0x0053C5F0
 static uint32_t GetSpellSkillInfoIndex(int32_t spellId) {
     int32_t skillLine = 0;
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (player) {
         SkillLineAbilityRec* ability = player->LookupAbility(spellId);
@@ -1516,7 +1516,7 @@ int32_t CGSpellBook::IsSelectedSlot(int32_t slot, int32_t petSpell) {
         return 0;
     }
 
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (player && spell.m_effect[0] == 47) {
         SkillLineAbilityRec* ability = player->LookupAbility(spell.m_id);
@@ -1721,7 +1721,7 @@ int32_t CGSpellBook::IsAuraCaster(WOWGUID guid, const WOWGUID* caster) {
         return 1;
     }
 
-    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(*caster, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(*caster, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!unit) {
         return 0;
@@ -1956,7 +1956,7 @@ int32_t CGSpellBook::CanApplyAura(const AuraData* aura) {
         return 0;
     }
 
-    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(aura->m_creator, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(aura->m_creator, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!unit || !unit->m_creatureCacheEntry) {
         return 0;
@@ -2035,7 +2035,7 @@ void CGSpellBook::GetAppropriateSpellRank(uint32_t* spellId, CGUnit_C* caster, C
     uint32_t level = target->m_unit->m_unitFieldLevel;
 
     if (target->m_unit->m_unitFieldSummonedby.m_guid) {
-        CGUnit_C* summoner = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(target->m_unit->m_unitFieldSummonedby, TYPEMASK_UNIT, __FILE__, __LINE__));
+        CGUnit_C* summoner = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(target->m_unit->m_unitFieldSummonedby, TYPE_UNIT, __FILE__, __LINE__));
 
         if (summoner) {
             level = summoner->m_unit->m_unitFieldLevel;

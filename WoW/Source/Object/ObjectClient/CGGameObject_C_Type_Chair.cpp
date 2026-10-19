@@ -47,7 +47,7 @@ bool CGGameObject_C_Type_Chair::CanUse() const {
         return false;
     }
 
-    CGUnit_C* player = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGUnit_C* player = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
     uint8_t standState = player->m_unit->m_unitFieldBytes1[0];
 
     if (standState < 4 || standState > 6) {

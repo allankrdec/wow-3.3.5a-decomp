@@ -18,7 +18,7 @@ void CGSimpleHealthBar::operator delete(void* ptr) {
 // VERIFY: 56bf9a4e manual
 // OFFSET: 0x009900E0
 static int32_t SimpleHealthUpdateHandler(WOWGUID guid, uint32_t fieldOffset, uint32_t fieldSize, const void* oldValue, void* param) {
-    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPE_UNIT, __FILE__, __LINE__));
 
     if (unit) {
         CGSimpleHealthBar* bar = static_cast<CGSimpleHealthBar*>(param);

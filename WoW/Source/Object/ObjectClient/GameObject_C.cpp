@@ -28,6 +28,7 @@
 #include "WoW/Source/DB/Rec/SpellEffectCameraShakesRec.h"
 #include "WoW/Source/DB/Rec/SpellVisualEffectNameRec.h"
 #include "WoW/Source/Game/GameClient/PlayerName.h"
+#include "WoW/Source/Game/GameClient/WorldText.h"
 #include "WoW/Source/LoadingScreen.h"
 #include "WoW/Source/Magic/MagicClient/Spell_C.h"
 #include "WoW/Source/Object/GameObjectDef.h"
@@ -87,6 +88,12 @@
 #include "WoW/Source/WorldClient/World.h"
 #include "WoW/Source/WowSvcs/WowSvcsClient/ClientServices.h"
 
+enum ANIMATED_OBJECT_STATE : int32_t {
+    STATE_OPENING = 0,
+    STATE_CLOSING = 1,
+    STATE_DESTROYED = 2,
+};
+
 // STATIC: 0x00A335E8
 static const uint32_t s_oneShotAnims[7] = { 0xFFFFFFFF, 0, 8, 9, 10, 11, 12 };
 
@@ -102,7 +109,7 @@ const char* CGGameObject_C_TypeAnimated::s_animStateNames[13] = { "Spawn", "Clos
 // VERIFY: 82a5bb1b manual
 // OFFSET: 0x00712AE0
 static void GameObjectStatsCallback(int32_t id, const WOWGUID& guid, void* param, bool success) {
-    CGGameObject_C* object = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__));
+    CGGameObject_C* object = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(guid, TYPE_GAMEOBJECT, __FILE__, __LINE__));
     WOWGUID requester = WOWGUID();
     GameObjectStats_C* stats = g_gameObjectDBCache.GetRecord(id, requester, nullptr, nullptr, false);
 
@@ -114,7 +121,7 @@ static void GameObjectStatsCallback(int32_t id, const WOWGUID& guid, void* param
 // VERIFY: fb01868b manual
 // OFFSET: 0x0070CAC0
 void CGGameObject_C::AnimEventCallback(CM2Model* model, uint32_t boneId, uint32_t eventId, uint32_t data, const C3Vector* position, uint32_t time, uint64_t param) {
-    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(WOWGUID{ param }, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__);
+    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(WOWGUID{ param }, TYPE_GAMEOBJECT, __FILE__, __LINE__);
 
     if (object) {
         object->m_typeData->HandleAnimEvent(eventId, data, *position, time);
@@ -124,7 +131,7 @@ void CGGameObject_C::AnimEventCallback(CM2Model* model, uint32_t boneId, uint32_
 // VERIFY: bca2a2a9 manual
 // OFFSET: 0x0070CB60
 int32_t CGGameObject_C::OnAnimProgressChanged(WOWGUID guid, uint32_t fieldOffset, uint32_t fieldSize, const void* oldValue, void* param) {
-    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(guid, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__);
+    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(guid, TYPE_GAMEOBJECT, __FILE__, __LINE__);
 
     if (object->m_typeData) {
         object->m_typeData->OnUpdateAnimProgress();
@@ -136,7 +143,7 @@ int32_t CGGameObject_C::OnAnimProgressChanged(WOWGUID guid, uint32_t fieldOffset
 // VERIFY: 52bb7f99 manual
 // OFFSET: 0x0070ED00
 int32_t CGGameObject_C::OnFlagsChanged(WOWGUID guid, uint32_t fieldOffset, uint32_t fieldSize, const void* oldValue, void* param) {
-    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(guid, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__);
+    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(guid, TYPE_GAMEOBJECT, __FILE__, __LINE__);
 
     if (object->m_typeData) {
         object->m_typeData->OnUpdateFlags(*static_cast<const uint32_t*>(oldValue) ^ object->m_gameObject->m_flags);
@@ -265,7 +272,7 @@ void CGGameObject_C_Type_DestructibleBuilding::PostInitWithStats() {
 // VERIFY: e11279e9 manual
 // OFFSET: 0x00711050
 int32_t CGGameObject_C::OnStateChanged(WOWGUID guid, uint32_t fieldOffset, uint32_t fieldSize, const void* oldValue, void* param) {
-    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(guid, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__);
+    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(guid, TYPE_GAMEOBJECT, __FILE__, __LINE__);
     int32_t state = object->m_gameObject->m_state;
     int32_t oldState = object->m_displayState;
 
@@ -285,7 +292,7 @@ int32_t CGGameObject_C::OnStateChanged(WOWGUID guid, uint32_t fieldOffset, uint3
 int32_t Packet_SMSG_GAMEOBJECT_PAGETEXT(void* param, NETMESSAGE msgId, uint32_t time, CDataStore* msg) {
     WOWGUID guid;
     msg->Get(guid.m_guid);
-    CGObject_C* object = ClntObjMgrObjectPtr(guid, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__);
+    CGObject_C* object = ClntObjMgrObjectPtr(guid, TYPE_GAMEOBJECT, __FILE__, __LINE__);
 
     if (object) {
         WOWGUID objectGuid = object->m_obj->m_guid;
@@ -300,7 +307,7 @@ int32_t Packet_SMSG_GAMEOBJECT_PAGETEXT(void* param, NETMESSAGE msgId, uint32_t 
 void CGGameObject_C::CheckForPassiveHighlight() {
     CGPlayer_C* player;
 
-    if ((this->m_gameObject->m_dynamicFlags & 0x8) || ((player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__))) != nullptr && player->CanTrackObject(this))) {
+    if ((this->m_gameObject->m_dynamicFlags & 0x8) || ((player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__))) != nullptr && player->CanTrackObject(this))) {
         this->m_modelFlags |= 0x400000;
         this->ShowLootEffect();
     } else {
@@ -320,7 +327,7 @@ void CGGameObject_C::CheckForPassiveHighlight() {
 // VERIFY: 84ec4568 manual
 // OFFSET: 0x00712B40
 static int32_t OnUpdateDynamicFlags(WOWGUID guid, uint32_t fieldOffset, uint32_t fieldSize, const void* oldValue, void* param) {
-    CGGameObject_C* object = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__));
+    CGGameObject_C* object = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(guid, TYPE_GAMEOBJECT, __FILE__, __LINE__));
 
     if ((static_cast<uint8_t>(object->m_gameObject->m_dynamicFlags) ^ *static_cast<const uint8_t*>(oldValue)) & 0x8) {
         object->CheckForPassiveHighlight();
@@ -347,7 +354,7 @@ void ApplyGameObjectArtKit(CM2Model* model, int32_t artKit) {
                 CTexture* texture = TextureCreate(rec->m_textureVariation[i], flags, &status, 0);
 
                 if (texture) {
-                    model->ReplaceTexture(i + 11, texture);
+                    model->ReplaceTexture(i + M2TEX_MONSTER_1, texture);
                     HandleClose(reinterpret_cast<HOBJECT>(texture));
                 }
             }
@@ -369,7 +376,7 @@ void ApplyGameObjectArtKit(CM2Model* model, int32_t artKit) {
 // VERIFY: 6bcc74fd manual
 // OFFSET: 0x00713ED0
 static int32_t OnUpdateArtKit(WOWGUID guid, uint32_t fieldOffset, uint32_t fieldSize, const void* oldValue, void* param) {
-    CGGameObject_C* object = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__));
+    CGGameObject_C* object = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(guid, TYPE_GAMEOBJECT, __FILE__, __LINE__));
 
     if (object->IsObjectModelLoaded()) {
         ApplyGameObjectArtKit(object->m_worldModel, object->m_gameObject->m_artKit);
@@ -417,7 +424,7 @@ void CGGameObject_C::Shutdown() {
 // VERIFY: e9485d9b manual
 // OFFSET: 0x0070CB10
 void CGGameObject_C::SequenceCallback(CM2Model* model, uint32_t boneId, uint32_t sequenceId, int32_t interrupted, uint32_t time, uint64_t param) {
-    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(WOWGUID{ param }, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__);
+    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(WOWGUID{ param }, TYPE_GAMEOBJECT, __FILE__, __LINE__);
 
     if (!object) {
         return;
@@ -1003,8 +1010,8 @@ void CGGameObject_C_TypeAnimated::UpdateState(int32_t oldState, int32_t newState
     SI2::StopSound(&this->m_sound, 0, -1.0f, 1);
 
     switch (newState) {
-        case 0: {
-            if (oldState == 1 || this->m_owner->m_gameObject->m_pathProgress != 0xFFFF) {
+        case STATE_OPENING: {
+            if (oldState == STATE_CLOSING || this->m_owner->m_gameObject->m_pathProgress != 0xFFFF) {
                 this->UpdateAnimState(2);
             } else {
                 this->UpdateAnimState(3);
@@ -1013,16 +1020,16 @@ void CGGameObject_C_TypeAnimated::UpdateState(int32_t oldState, int32_t newState
             break;
         }
 
-        case 1: {
-            int32_t state = this->m_owner->m_gameObject->m_pathProgress == 0xFFFF ? oldState : 0;
+        case STATE_CLOSING: {
+            int32_t state = this->m_owner->m_gameObject->m_pathProgress == 0xFFFF ? oldState : STATE_OPENING;
 
             switch (state) {
-                case 0: {
+                case STATE_OPENING: {
                     this->UpdateAnimState(4);
                     break;
                 }
 
-                case 2: {
+                case STATE_DESTROYED: {
                     this->UpdateAnimState(7);
                     break;
                 }
@@ -1036,8 +1043,8 @@ void CGGameObject_C_TypeAnimated::UpdateState(int32_t oldState, int32_t newState
             break;
         }
 
-        case 2: {
-            if (oldState == 1 || this->m_owner->m_gameObject->m_pathProgress != 0xFFFF) {
+        case STATE_DESTROYED: {
+            if (oldState == STATE_CLOSING || this->m_owner->m_gameObject->m_pathProgress != 0xFFFF) {
                 this->UpdateAnimState(5);
             } else {
                 this->UpdateAnimState(6);
@@ -1051,7 +1058,7 @@ void CGGameObject_C_TypeAnimated::UpdateState(int32_t oldState, int32_t newState
 // VERIFY: c1ad28de manual
 // OFFSET: 0x00712030
 bool CGGameObject_C_Type_FishingNode::CanUse() const {
-    CGObject_C* player = ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__);
+    CGObject_C* player = ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__);
 
     if (player && *(const WOWGUID*)&((CGUnit_C*)player)->m_unit->m_unitFieldChannelObject == this->m_owner->m_obj->m_guid) {
         return CGGameObject_C_TypeBase::CanUse();
@@ -1063,7 +1070,7 @@ bool CGGameObject_C_Type_FishingNode::CanUse() const {
 // VERIFY: f61c006c auto
 // OFFSET: 0x0070B910
 int32_t CGGameObject_C_Type_GuildBank::CanChangeCursor() const {
-    return this->CanUseNow(nullptr, nullptr, nullptr) ? 3 : 29;
+    return this->CanUseNow(nullptr, nullptr, nullptr) ? BUY_CURSOR : BUY_ERROR_CURSOR;
 }
 
 // VERIFY: 1e1b3af8 auto
@@ -1188,7 +1195,7 @@ void CGGameObject_C_Type_DestructibleBuilding::AmbientSequenceFinishedHandler(CM
 // VERIFY: 73f5d046 manual
 // OFFSET: 0x0070CA40
 void CGGameObject_C_Type_DestructibleBuilding::AnimEventCallback(CM2Model* model, uint32_t boneId, uint32_t eventId, uint32_t data, const C3Vector* position, uint32_t time, uint64_t param) {
-    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(WOWGUID{ param }, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__);
+    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(WOWGUID{ param }, TYPE_GAMEOBJECT, __FILE__, __LINE__);
 
     if (object) {
         object->m_typeData->HandleAnimEvent(eventId, data, *position, time);
@@ -1371,7 +1378,7 @@ int32_t Packet_SMSG_GAMEOBJECT_DESPAWN_ANIM(void* param, NETMESSAGE msgId, uint3
     WOWGUID guid;
     msg->Get(guid.m_guid);
 
-    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(guid, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__);
+    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(guid, TYPE_GAMEOBJECT, __FILE__, __LINE__);
 
     if (object) {
         if (!object->IsObjectModelLoaded()) {
@@ -1671,7 +1678,7 @@ int32_t Packet_SMSG_GAMEOBJECT_CUSTOM_ANIM(void* param, NETMESSAGE msgId, uint32
     msg->Get(guid.m_guid);
     msg->Get(anim);
 
-    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(guid, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__);
+    CGGameObject_C* object = (CGGameObject_C*)ClntObjMgrObjectPtr(guid, TYPE_GAMEOBJECT, __FILE__, __LINE__);
 
     if (object && anim < 4) {
         object->PlayCustomAnim(anim);
@@ -2251,7 +2258,7 @@ void CGGameObject_C_Type_DestructibleBuilding::UpdateDestructibleState() {
     }
 
     if (this->m_worldObject && state > current && state != 3 && state) {
-        CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+        CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
         if (mover && !mover->HasVehicleTransport() && !(mover->m_movement->m_flags & 0x2000000)) {
             CAaBox extents;
@@ -2584,7 +2591,7 @@ void CGGameObject_C_Type_DestructibleBuilding::DestroyWorldObj() {
 // VERIFY: 273ab916 manual
 // OFFSET: 0x0070ECB0
 bool CGGameObject_C_Type_GuildBank::Use() {
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (player) {
         WOWGUID guid = this->m_owner->m_obj->m_guid;
@@ -2767,7 +2774,7 @@ bool CGGameObject_C::IsValidTargetForSpell(const WOWGUID& item, int32_t spellId)
         return false;
     }
 
-    CGItem_C* key = static_cast<CGItem_C*>(ClntObjMgrObjectPtr(item, TYPEMASK_ITEM, __FILE__, __LINE__));
+    CGItem_C* key = static_cast<CGItem_C*>(ClntObjMgrObjectPtr(item, TYPE_ITEM, __FILE__, __LINE__));
 
     for (uint32_t i = 0; i < 3; i++) {
         if (spell.m_effect[i] != 33) {
@@ -2814,7 +2821,7 @@ bool CGGameObject_C::IsValidTargetForSpell(const WOWGUID& item, int32_t spellId)
 // OFFSET: 0x0070CE10
 int32_t CGGameObject_C::CanChangeCursor() const {
     if (!this->m_typeData->CanUse()) {
-        return 0;
+        return NO_CURSOR;
     }
 
     if (!this->m_stats || !this->m_stats->m_iconName || !*this->m_stats->m_iconName) {
@@ -2830,7 +2837,7 @@ int32_t CGGameObject_C::CanChangeCursor() const {
     }
 
     int32_t mode = CursorGetModeFromName(name);
-    return mode ? mode : 53;
+    return mode ? mode : NUM_CURSOR_MODES;
 }
 
 // VERIFY: 9f6a62fd manual
@@ -2884,7 +2891,7 @@ void CGGameObject_C::Reenable() {
 // VERIFY: d9d6f845 manual
 // OFFSET: 0x0070EDD0
 UNIT_REACTION CGGameObject_C::ObjectReaction(const CGUnit_C* unit) const {
-    CGUnit_C* creator = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(this->m_gameObject->m_createdBy, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* creator = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(this->m_gameObject->m_createdBy, TYPE_UNIT, __FILE__, __LINE__));
 
     if (creator) {
         return creator->UnitReaction(unit);
@@ -2909,7 +2916,7 @@ void CGGameObject_C::AddWorldDamageText(int32_t amount) {
     if (amount && g_combatDamageCVar->m_intValue && this->m_gameObject->m_typeID == 33) {
         char text[32];
         SStrPrintf(text, sizeof(text), "%d", amount);
-        PlayerNameCreateText(this->m_nameDesc, 8, text, reinterpret_cast<const CImVector*>(&s_buildingDamageColor), nullptr);
+        PlayerNameCreateText(this->m_nameDesc, WT_BUILDING_DAMAGE, text, reinterpret_cast<const CImVector*>(&s_buildingDamageColor), nullptr);
     }
 }
 
@@ -2919,7 +2926,7 @@ void CGGameObject_C::AddWorldHealingText(int32_t amount, const SpellRec* spell) 
     if (amount && g_combatHealingCVar->m_intValue && this->m_gameObject->m_typeID == 33) {
         char text[32];
         SStrPrintf(text, sizeof(text), "+%d", amount);
-        PlayerNameCreateText(this->m_nameDesc, 9, text, nullptr, nullptr);
+        PlayerNameCreateText(this->m_nameDesc, WT_BUILDING_HEAL, text, nullptr, nullptr);
     }
 }
 
@@ -3138,7 +3145,7 @@ bool CGGameObject_C::IsCreatorOnlyUse() const {
 // VERIFY: 78a5991c manual
 // OFFSET: 0x007112A0
 bool CGGameObject_C_TypeBase::CanUse() const {
-    CGUnit_C* player = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGUnit_C* player = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (!player) {
         return false;
@@ -3152,7 +3159,7 @@ bool CGGameObject_C_TypeBase::CanUse() const {
         WOWGUID creatorGuid = this->m_owner->m_gameObject->m_createdBy;
 
         if (!(creatorGuid.m_guid & 0xF000000000000000ULL) && (creatorGuid.m_guid & 0xF07FFFFFFFFFFFFFULL)) {
-            CGUnit_C* creator = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(creatorGuid, TYPEMASK_PLAYER, __FILE__, __LINE__));
+            CGUnit_C* creator = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(creatorGuid, TYPE_PLAYER, __FILE__, __LINE__));
 
             if (!creator) {
                 return false;
@@ -3470,7 +3477,7 @@ void CGGameObject_C_Type_MapObjTransport::UpdateMovement(uint32_t time, uint32_t
     this->m_shipPath.GetPosition(pathTime, elapsed, &mapId, &sequence, &position, &facing, &leg, &roll, &pitch, 0);
 
     if (mapId != static_cast<int32_t>(ClntObjMgrGetMapID())) {
-        CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+        CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
         if (mover && mover->GetTransportGUID() == this->m_owner->m_obj->m_guid.m_guid) {
             MovementSetTransportUpdateTime(this->m_transportUpdateTime);
@@ -3545,7 +3552,7 @@ void CGGameObject_C_Type_MapObjTransport::UpdateMovement(uint32_t time, uint32_t
         return;
     }
 
-    CGUnit_C* target = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGWorldFrame::GetActiveCamera()->m_targetGUID, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* target = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGWorldFrame::GetActiveCamera()->m_targetGUID, TYPE_UNIT, __FILE__, __LINE__));
     AsyncFileReadSetProgressCallback(LoadingScreenAsyncCallback, nullptr);
     World::SetLoadProgressCallback(LoadingScreenWorldCallback, nullptr);
     LoadingScreenEnableShipLeg(this->m_owner->m_obj->m_entryID, previousLeg);
@@ -3575,7 +3582,7 @@ void CGGameObject_C_Type_TransportBase::MovePassengers(int32_t* moved) {
     }
 
     WOWGUID cameraTarget = CGWorldFrame::GetActiveCamera()->m_targetGUID;
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     for (CPassenger* passenger = this->m_passengers.Head(); passenger; passenger = this->m_passengers.Next(passenger)) {
         CMovementShared* movement = static_cast<CMovementShared*>(passenger);
@@ -3588,7 +3595,7 @@ void CGGameObject_C_Type_TransportBase::MovePassengers(int32_t* moved) {
             *moved = 1;
         }
 
-        CGObject_C* object = static_cast<CGObject_C*>(ClntObjMgrObjectPtr(*passenger->m_ownerGuid, TYPEMASK_OBJECT, __FILE__, __LINE__));
+        CGObject_C* object = static_cast<CGObject_C*>(ClntObjMgrObjectPtr(*passenger->m_ownerGuid, TYPE_OBJECT, __FILE__, __LINE__));
         uint64_t guid = passenger->m_ownerGuid->m_guid;
         uint32_t high = static_cast<uint32_t>(guid >> 32);
 
@@ -3637,7 +3644,7 @@ uint32_t CGGameObject_C::GetProperty(int32_t prop) const {
 // VERIFY: 9dd592e6 manual
 // OFFSET: 0x0070F160
 bool CGGameObject_C::IsLocked(int32_t* spellId, int32_t* skillValue, int32_t* requiredSkill, CGItem_C** key, uint32_t* entry) const {
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (!player) {
         return false;
@@ -3891,7 +3898,7 @@ int32_t CGGameObject_C_TypeBase::CanChangeCursor() const {
         }
     }
 
-    return canUse ? 5 : 31;
+    return canUse ? INTERACT_CURSOR : INTERACT_ERROR_CURSOR;
 }
 
 // VERIFY: 7a1f42bf manual
@@ -4251,7 +4258,7 @@ bool CGGameObject_C_TypeBase::Use() {
 // VERIFY: dd557bea manual
 // OFFSET: 0x00712080
 bool CGGameObject_C_Type_Ritual::CanUseNow(GAME_ERROR_TYPE* error, float* distance, const char** errorText) const {
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (!player) {
         return false;
@@ -4268,7 +4275,7 @@ bool CGGameObject_C_Type_Ritual::CanUseNow(GAME_ERROR_TYPE* error, float* distan
     const WOWGUID& creator = this->m_owner->m_gameObject->m_createdBy;
 
     if (!(creator.m_guid & 0xF000000000000000ULL) && (creator.m_guid & 0xF07FFFFFFFFFFFFFULL)) {
-        CGUnit_C* caster = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(creator, TYPEMASK_PLAYER, __FILE__, __LINE__));
+        CGUnit_C* caster = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(creator, TYPE_PLAYER, __FILE__, __LINE__));
 
         if (!caster || (!player->IsInMyPartyOrRaid(caster) && !player->IsInMyParty(caster))) {
             return false;
@@ -4294,7 +4301,7 @@ int32_t CGGameObject_C_Type_MeetingStone::CheckUseRange(uint32_t level) const {
 // VERIFY: 3fa35c2b manual
 // OFFSET: 0x00712270
 bool CGGameObject_C_Type_MeetingStone::Use() {
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (!player) {
         return false;
@@ -4321,7 +4328,7 @@ bool CGGameObject_C_Type_MeetingStone::Use() {
     }
 
     uint32_t level;
-    CGUnit_C* target = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGGameUI::m_lockedTarget, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* target = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGGameUI::m_lockedTarget, TYPE_UNIT, __FILE__, __LINE__));
 
     if (target) {
         level = target->m_unit->m_unitFieldLevel;

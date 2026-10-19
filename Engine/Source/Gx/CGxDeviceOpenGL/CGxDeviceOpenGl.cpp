@@ -42,7 +42,7 @@ static const GLint s_glMagFilter[GxTexFilters_Last] = { GL_NEAREST, GL_LINEAR, G
 static const uint32_t s_glBytesPerPixel[GxTexFormats_Last] = { 0, 4, 4, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0 };
 
 // STATIC: 0x00A2F2E0
-static const GLenum s_glCubeFaces[6] = { 0x8515, 0x8516, 0x8517, 0x8518, 0x8519, 0x851A };
+static const GLenum s_glCubeFaces[GxTexCubeFaces_Last] = { 0x8515, 0x8516, 0x8517, 0x8518, 0x8519, 0x851A };
 
 // STATIC: 0x00A2F278
 static const GLenum s_glFormat[GxTexFormats_Last] = { 0, GL_RGBA, 0x80E1, 0x80E1, 0x80E1, GL_RGB, 0, 0, 0, 0x86F5, GL_RGB, GL_RGB, GL_DEPTH_COMPONENT };
@@ -88,7 +88,7 @@ static GLenum s_glBlendSrc[12] = { GL_ONE, GL_ONE, GL_SRC_ALPHA, GL_SRC_ALPHA, G
 static GLenum s_glBlendDst[12] = { GL_ZERO, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO, GL_SRC_COLOR, GL_ONE, GL_ONE, GL_ZERO, GL_ZERO, GL_ONE, GL_ONE_MINUS_CONSTANT_ALPHA_EXT };
 
 // STATIC: 0x00AD8E80
-static GLenum s_glDepthFunc[4] = { GL_LEQUAL, GL_EQUAL, GL_GEQUAL, GL_LESS };
+static GLenum s_glDepthFunc[GxCmps_Last] = { GL_LEQUAL, GL_EQUAL, GL_GEQUAL, GL_LESS };
 
 // STATIC: 0x00AD8E90
 static GLenum s_glColorMaterial[3] = { GL_AMBIENT_AND_DIFFUSE, GL_SPECULAR, GL_EMISSION };
@@ -3507,8 +3507,8 @@ void CGxDeviceOpenGl::ISetTexGen(uint32_t tmu, int32_t texGen) {
             this->DsSet(static_cast<EDeviceState>(Ds_TexGenQ0 + tmu), 0, 0);
             break;
 
-        case GxTexGen_EyeLinear:
-        case GxTexGen_Unk3:
+        case GxTexGen_World:
+        case GxTexGen_View:
             this->DsSet(static_cast<EDeviceState>(Ds_TexGenS0 + tmu), GL_EYE_LINEAR, 0);
             this->DsSet(static_cast<EDeviceState>(Ds_TexGenT0 + tmu), GL_EYE_LINEAR, 0);
             this->DsSet(static_cast<EDeviceState>(Ds_TexGenR0 + tmu), GL_EYE_LINEAR, 0);
@@ -3540,7 +3540,7 @@ void CGxDeviceOpenGl::ISetTexGen(uint32_t tmu, int32_t texGen) {
             break;
     }
 
-    if (texGen == GxTexGen_EyeLinear) {
+    if (texGen == GxTexGen_World) {
         CGxMatrixStack& stack = this->m_texGen[tmu];
         stack.m_dirty = 1;
         stack.m_flags[stack.m_level] &= ~CGxMatrixStack::F_Identity;
@@ -4353,7 +4353,7 @@ void CGxDeviceOpenGl::ITexMarkAsUpdated(CGxTex* texId, uint32_t tmu) {
             this->BindTexture(texId, tmu);
         }
 
-        uint32_t faceCount = texId->m_target == GxTex_CubeMap ? 6 : 1;
+        uint32_t faceCount = texId->m_target == GxTex_CubeMap ? GxTexCubeFaces_Last : 1;
 
         for (uint32_t face = 0; face < faceCount; face++) {
             uint32_t mipWidth = width;

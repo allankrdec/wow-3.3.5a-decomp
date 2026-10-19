@@ -863,19 +863,19 @@ void CSimpleEditBox::UpdateLanguageIndicator() {
     int32_t language = this->m_inputLanguage;
 
     switch (OsIMEGetLanguageMode()) {
-        case 0:
+        case OS_IME_MODE_ROMAN:
             language = 0;
             break;
 
-        case 1:
+        case OS_IME_MODE_JAPANESE:
             language = 3;
             break;
 
-        case 2:
+        case OS_IME_MODE_KOREAN:
             language = 1;
             break;
 
-        case 3:
+        case OS_IME_MODE_CHINESE:
             language = 2;
             break;
     }

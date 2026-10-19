@@ -1,4 +1,5 @@
 #include "MapChunkLiquid.h"
+#include "WoW/Source/WorldClient/WorldConstants.h"
 #include <cmath>
 #include "Engine/Source/Gx/CGxBuf.h"
 #include "Engine/Source/Gx/CGxDevice/CGxDevice.h"
@@ -459,11 +460,11 @@ void CChunkLiquid::Batch() {
         CChunkLiquid* liquid = s_batch.m_data[i];
 
         C2Vector minXY = C2Vector(liquid->m_topLeftCoords);
-        minXY.x = minXY.x + liquid->m_tileBegin.y * 4.1666665f;
-        minXY.y = minXY.y + 4.1666665f * liquid->m_tileBegin.x;
+        minXY.x = minXY.x + liquid->m_tileBegin.y * SMOLTILE_SIZE;
+        minXY.y = minXY.y + SMOLTILE_SIZE * liquid->m_tileBegin.x;
         C2Vector maxXY = C2Vector(liquid->m_topLeftCoords);
-        maxXY.x = maxXY.x + liquid->m_tileEnd.y * 4.1666665f;
-        maxXY.y = maxXY.y + 4.1666665f * liquid->m_tileEnd.x;
+        maxXY.x = maxXY.x + liquid->m_tileEnd.y * SMOLTILE_SIZE;
+        maxXY.y = maxXY.y + SMOLTILE_SIZE * liquid->m_tileEnd.x;
 
         CAaBox box(C3Vector(minXY.x, minXY.y, liquid->m_height.x), C3Vector(maxXY.x, maxXY.y, liquid->m_height.y));
 

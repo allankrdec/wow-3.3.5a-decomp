@@ -17,14 +17,14 @@ static HIMC s_context;
 static uint32_t s_enableCount;
 
 // OFFSET: 0x0086CC20
-int32_t OsIMEGetLanguageMode() {
+OS_IME_LANGUAGEMODE OsIMEGetLanguageMode() {
     HWND window = static_cast<HWND>(OsGuiGetWindow(0));
     HIMC context = ImmGetContext(window);
     if (!context) {
-        return 0;
+        return OS_IME_MODE_ROMAN;
     }
 
-    int32_t mode = 0;
+    OS_IME_LANGUAGEMODE mode = OS_IME_MODE_ROMAN;
     DWORD conversion = 0;
     DWORD sentence;
     ImmGetConversionStatus(context, &conversion, &sentence);
@@ -34,13 +34,13 @@ int32_t OsIMEGetLanguageMode() {
 
         switch (reinterpret_cast<uintptr_t>(layout) & 0xFF) {
             case LANG_CHINESE:
-                mode = reinterpret_cast<uintptr_t>(layout) == 0x08040804 ? 0 : 3;
+                mode = reinterpret_cast<uintptr_t>(layout) == 0x08040804 ? OS_IME_MODE_ROMAN : OS_IME_MODE_CHINESE;
                 break;
             case LANG_JAPANESE:
-                mode = 1;
+                mode = OS_IME_MODE_JAPANESE;
                 break;
             case LANG_KOREAN:
-                mode = 2;
+                mode = OS_IME_MODE_KOREAN;
                 break;
         }
     }

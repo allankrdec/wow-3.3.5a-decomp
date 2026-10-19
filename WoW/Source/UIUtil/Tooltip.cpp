@@ -521,7 +521,7 @@ char* CGItem_C::GetStatName(uint32_t stat, char* buffer, int32_t size) {
 // VERIFY: 1bfb61f6 manual
 // OFFSET: 0x0061BF10
 static int32_t HealthUpdateHandler(WOWGUID guid, uint32_t fieldOffset, uint32_t fieldSize, const void* oldValue, void* param) {
-    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPE_UNIT, __FILE__, __LINE__));
 
     if (unit) {
         CSimpleStatusBar* statusBar = static_cast<CSimpleStatusBar*>(param);
@@ -535,7 +535,7 @@ static int32_t HealthUpdateHandler(WOWGUID guid, uint32_t fieldOffset, uint32_t 
 // VERIFY: 30f0882c manual
 // OFFSET: 0x0061BF80
 static int32_t ObjHealthUpdateHandler(WOWGUID guid, uint32_t fieldOffset, uint32_t fieldSize, const void* oldValue, void* param) {
-    CGGameObject_C* object = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__));
+    CGGameObject_C* object = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(guid, TYPE_GAMEOBJECT, __FILE__, __LINE__));
 
     if (object) {
         CSimpleStatusBar* statusBar = static_cast<CSimpleStatusBar*>(param);
@@ -1470,7 +1470,7 @@ void CGTooltip::GetSummonedByString(CGUnit_C* unit, char* buffer, uint32_t size)
         return;
     }
 
-    CGUnit_C* ownerUnit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(owner, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* ownerUnit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(owner, TYPE_UNIT, __FILE__, __LINE__));
 
     if (ownerUnit && *ownerUnit->GetCharmerOrCreatorGuid()) {
         owner = *ownerUnit->GetCharmerOrCreatorGuid();
@@ -1731,7 +1731,7 @@ int32_t CGTooltip::SetUnit(const WOWGUID& guid, int32_t showHealth, const WOWGUI
 
     this->ClearTooltip();
 
-    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(guid, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!healthGuid && unit && unit->HasAuraEffect(279)) {
         SpellRec spell;
@@ -1777,7 +1777,7 @@ int32_t CGTooltip::SetUnit(const WOWGUID& guid, int32_t showHealth, const WOWGUI
 
     if (this->m_statusBar && showHealth) {
         this->m_healthGuid = healthGuid ? healthGuid : this->m_unitGuid;
-        CGUnit_C* healthUnit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(this->m_healthGuid, TYPEMASK_UNIT, __FILE__, __LINE__));
+        CGUnit_C* healthUnit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(this->m_healthGuid, TYPE_UNIT, __FILE__, __LINE__));
         ClntObjMgrSetObjMirrorHandler(this->m_healthGuid, ID_UNIT, offsetof(CGUnitData, m_unitFieldHealth), sizeof(int32_t), HealthUpdateHandler, this->m_statusBar, HANDLER_PRIORITY_NORMAL, 0);
 
         float maxHealth;
@@ -1821,7 +1821,7 @@ int32_t CGTooltip::SetUnit(const WOWGUID& guid, int32_t showHealth, const WOWGUI
 
         this->AddLine(title, nullptr, titleColor, titleColor, 0);
 
-        if (unit->m_obj->m_type & TYPEMASK_PLAYER) {
+        if (unit->m_obj->m_type & TYPE_PLAYER) {
             uint32_t guildId = static_cast<CGPlayer_C*>(unit)->m_player->m_playerGuildid;
 
             if (guildId) {
@@ -1850,17 +1850,17 @@ int32_t CGTooltip::SetUnit(const WOWGUID& guid, int32_t showHealth, const WOWGUI
     CGPlayer_C* player = nullptr;
     const char* subName = nullptr;
 
-    if (colorblind && colorblind->m_intValue && (player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__))) != nullptr) {
+    if (colorblind && colorblind->m_intValue && (player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__))) != nullptr) {
         if (unit) {
             line[0] = 0;
-            FRAMESCRIPT_GENDER gender = player->m_unit->m_unitFieldBytes0[2] == 1 ? GENDER_FEMALE : GENDER_MALE;
+            FRAMESCRIPT_GENDER gender = player->m_unit->m_unitFieldBytes0[2] == UNITSEX_FEMALE ? GENDER_FEMALE : GENDER_MALE;
             SStrPrintf(line, sizeof(line), "FACTION_STANDING_LABEL%d", unit->UnitReaction(player) + 1);
             this->AddLine(FrameScript_GetText(line, 0, gender), nullptr, textColor, textColor, 0);
         }
     }
 
     if (!subName) {
-        if (unit && !(unit->m_obj->m_type & TYPEMASK_PLAYER)) {
+        if (unit && !(unit->m_obj->m_type & TYPE_PLAYER)) {
             subName = unit->GetUnitTitle();
         } else if (creature) {
             subName = creature->m_subName;
@@ -1883,7 +1883,7 @@ int32_t CGTooltip::SetUnit(const WOWGUID& guid, int32_t showHealth, const WOWGUI
     char type[64] = {};
     char level[32];
 
-    CGPlayer_C* activePlayer = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* activePlayer = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
     int32_t dead = 0;
     CreatureTypeRec* creatureType = nullptr;
     int32_t unitLevel = 0;
@@ -1945,7 +1945,7 @@ int32_t CGTooltip::SetUnit(const WOWGUID& guid, int32_t showHealth, const WOWGUI
 
     if (dead) {
         SStrCopy(className, FrameScript_GetText("CORPSE", -1, GENDER_NOT_APPLICABLE), sizeof(className));
-    } else if ((unit && (unit->m_obj->m_type & TYPEMASK_PLAYER)) || name) {
+    } else if ((unit && (unit->m_obj->m_type & TYPE_PLAYER)) || name) {
         const char* raceName = CGUnit_C::GetDisplayRaceName(unit, name);
         const char* classNameText = CGUnit_C::GetDisplayClassName(unit, name);
 
@@ -1962,7 +1962,7 @@ int32_t CGTooltip::SetUnit(const WOWGUID& guid, int32_t showHealth, const WOWGUI
     if (unit) {
         classification = unit->IsBossMob() ? "BOSS" : s_classificationTokens[unit->GetCreatureClassification()];
 
-        if (unit->m_obj->m_type & TYPEMASK_PLAYER) {
+        if (unit->m_obj->m_type & TYPE_PLAYER) {
             SStrCopy(type, FrameScript_GetText("PLAYER", -1, GENDER_NOT_APPLICABLE), sizeof(type));
         } else if (name) {
             SStrCopy(type, FrameScript_GetText("PLAYER", -1, GENDER_NOT_APPLICABLE), sizeof(type));
@@ -2033,11 +2033,11 @@ int32_t CGTooltip::SetUnit(const WOWGUID& guid, int32_t showHealth, const WOWGUI
     }
 
     if (unit) {
-        if (((unit->m_obj->m_type & TYPEMASK_PLAYER) && (static_cast<CGPlayer_C*>(unit)->m_player->m_playerFlags & 0x100)) || (unit->m_unit->m_unitFieldBytes2[1] & 0x1)) {
+        if (((unit->m_obj->m_type & TYPE_PLAYER) && (static_cast<CGPlayer_C*>(unit)->m_player->m_playerFlags & 0x100)) || (unit->m_unit->m_unitFieldBytes2[1] & 0x1)) {
             this->AddLine(FrameScript_GetText("PVP_ENABLED", -1, GENDER_NOT_APPLICABLE), nullptr, textColor, textColor, 0);
         }
 
-        if (unit->m_unit->m_unitFieldHealth <= 0 && (unit->m_obj->m_type & TYPEMASK_PLAYER) && activePlayer && activePlayer->CanAssist(unit, false)) {
+        if (unit->m_unit->m_unitFieldHealth <= 0 && (unit->m_obj->m_type & TYPE_PLAYER) && activePlayer && activePlayer->CanAssist(unit, false)) {
             this->AddLine(FrameScript_GetText("RESURRECTABLE", -1, GENDER_NOT_APPLICABLE), nullptr, greenColor, greenColor, 0);
         }
 
@@ -2045,7 +2045,7 @@ int32_t CGTooltip::SetUnit(const WOWGUID& guid, int32_t showHealth, const WOWGUI
             this->AddEmpathyText(unit, line, sizeof(line));
         }
 
-        if ((unit->m_unit->m_unitFieldFlags & 0x4000000) && !(unit->m_obj->m_type & TYPEMASK_PLAYER)) {
+        if ((unit->m_unit->m_unitFieldFlags & 0x4000000) && !(unit->m_obj->m_type & TYPE_PLAYER)) {
             this->AddSkinnableText(unit, line, sizeof(line));
         }
     }
@@ -2202,7 +2202,7 @@ void CGTooltip::SetCorpse(const WOWGUID& guid) {
 
     this->ClearTooltip();
 
-    CGCorpse_C* corpse = static_cast<CGCorpse_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_CORPSE, __FILE__, __LINE__));
+    CGCorpse_C* corpse = static_cast<CGCorpse_C*>(ClntObjMgrObjectPtr(guid, TYPE_CORPSE, __FILE__, __LINE__));
 
     if (!corpse) {
         this->Hide();
@@ -2224,7 +2224,7 @@ void CGTooltip::SetCorpse(const WOWGUID& guid) {
 // VERIFY: cbeee45f manual
 // OFFSET: 0x0061E540
 const char* CGTooltip::GetQuestDifficultyColorString(int32_t level) {
-    CGUnit_C* player = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGUnit_C* player = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (!player) {
         return s_questDifficultyColorStrings[2];
@@ -2291,7 +2291,7 @@ void CGTooltip::AppendText(const char* text) {
 // OFFSET: 0x0061E290
 const char* CGTooltip::CreateItemLink(int32_t itemId, uint32_t quality, int32_t enchant, const int32_t* gems, int32_t randomPropertiesId, int32_t seed) {
     uint32_t level = 0;
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (player) {
         level = player->m_unit->m_unitFieldLevel;
@@ -2321,7 +2321,7 @@ const char* CGTooltip::GetItemHyperlinkString(CGItem_C* item) {
     int32_t gems[3];
 
     for (uint32_t i = 0; i < 3; i++) {
-        if (!wrapped && !(item->GetItemStaticFlags(0) & 0x2000)) {
+        if (!wrapped && !(item->GetItemStaticFlags(0) & ITEM_FLAG_PETITION)) {
             gems[i] = item->m_item->m_itemFieldEnchantment[2 + i].m_id;
         } else {
             gems[i] = 0;
@@ -2338,7 +2338,7 @@ const char* CGTooltip::GetItemHyperlinkString(CGItem_C* item) {
     } else {
         randomPropertiesId = item->m_item->m_itemFieldRandomPropertiesId;
         seed = item->m_item->m_itemFieldPropertySeed;
-        enchant = item->GetItemStaticFlags(0) & 0x2000 ? 0 : item->m_item->m_itemFieldEnchantment[0].m_id;
+        enchant = item->GetItemStaticFlags(0) & ITEM_FLAG_PETITION ? 0 : item->m_item->m_itemFieldEnchantment[0].m_id;
     }
 
     return CGTooltip::CreateItemLink(item->m_obj->m_entryID, stats ? stats->m_quality : 1, enchant, gems, randomPropertiesId, seed);
@@ -2562,7 +2562,7 @@ void CGTooltip::AddTalentLearnText(const TalentRec* talent, CGTalentGroup_C* gro
     const CImVector& redColor = *reinterpret_cast<const CImVector*>(&s_tooltipRedColor);
     const CImVector& greenColor = *reinterpret_cast<const CImVector*>(&s_tooltipGreenColor);
 
-    if (!talent || !ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__)) {
+    if (!talent || !ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__)) {
         return;
     }
 
@@ -3160,7 +3160,7 @@ int32_t CGTooltip::SetSpell(int32_t spellId, int32_t brief, uint32_t cooldown, i
         this->ClearTooltip();
     }
 
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (!player) {
         this->Hide();
@@ -3185,9 +3185,9 @@ int32_t CGTooltip::SetSpell(int32_t spellId, int32_t brief, uint32_t cooldown, i
     CGUnit_C* caster;
 
     if (isInspect) {
-        caster = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGCharacterInfo::m_inspectTarget, TYPEMASK_UNIT, __FILE__, __LINE__));
+        caster = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGCharacterInfo::m_inspectTarget, TYPE_UNIT, __FILE__, __LINE__));
     } else if (isPet) {
-        caster = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPEMASK_UNIT, __FILE__, __LINE__));
+        caster = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPE_UNIT, __FILE__, __LINE__));
     } else {
         caster = player;
     }
@@ -3825,14 +3825,14 @@ int32_t CGTooltip::GetDisplayedScalingItemLevel(const ItemStats_C* stats, const 
     if (minimumLevel) {
         level = 1;
     } else if ((!link || !(level = link->m_level)) && target != CGMerchantInfo::m_merchant) {
-        CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(target, TYPEMASK_UNIT, __FILE__, __LINE__));
+        CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(target, TYPE_UNIT, __FILE__, __LINE__));
 
         if (unit) {
             level = unit->m_unit->m_unitFieldLevel;
         }
     }
 
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (player && !level) {
         level = player->m_unit->m_unitFieldLevel;
@@ -3890,7 +3890,7 @@ void CGTooltip::AddSpellReagents(const SpellRec* spell, const char* token, void 
             SStrPrintf(reagent, sizeof(reagent), "%s (%d)", name, spell->m_reagentCount[i]);
         }
 
-        CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+        CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
         if (player && player->m_bag.GetItemTypeCount(spell->m_reagent[i], 0) >= spell->m_reagentCount[i]) {
             SStrPack(text, reagent, sizeof(text));
@@ -3925,7 +3925,7 @@ int32_t CGTooltip::SetItemNoStats() {
 // VERIFY: 8eac5de9 manual
 // OFFSET: 0x00625F00
 int32_t SetTooltipUnitAura(CGTooltip* tooltip, ScriptAuraInfo* info) {
-    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(info->m_guid, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(info->m_guid, TYPE_UNIT, __FILE__, __LINE__));
 
     if (unit) {
         if ((unit->m_auraEffectMask[36] & 0x80) && ClntObjMgrGetActivePlayer() && !unit->IsFriendly(ClntObjMgrGetActivePlayerObj())) {
@@ -3987,8 +3987,8 @@ int32_t SetTooltipUnitAura(CGTooltip* tooltip, ScriptAuraInfo* info) {
         return 0;
     }
 
-    bool helpful = info->m_filter & 0x1;
-    bool raid = (info->m_filter & 0x8) != 0;
+    bool helpful = info->m_filter & BUFF_FILTER_HELPFUL;
+    bool raid = (info->m_filter & BUFF_FILTER_RAID) != 0;
     int32_t found = 0;
 
     for (uint32_t i = 0; i < 64 && auras[i]; i++) {
@@ -4012,7 +4012,7 @@ int32_t SetTooltipUnitAura(CGTooltip* tooltip, ScriptAuraInfo* info) {
             continue;
         }
 
-        if ((auraFlags[i] & 0x10) ? (info->m_filter & 0x20) : (info->m_filter & 0x10)) {
+        if ((auraFlags[i] & 0x10) ? (info->m_filter & BUFF_FILTER_NOT_CANCELABLE) : (info->m_filter & BUFF_FILTER_CANCELABLE)) {
             continue;
         }
 
@@ -4135,13 +4135,13 @@ static void AddItemNameLines(CGTooltip* tooltip, const ItemStats_C* stats, int32
     CVar* colorblindMode = CVar::Lookup("colorblindMode");
 
     if (colorblindMode && colorblindMode->m_intValue) {
-        if (stats->m_flags[0] & 8) {
+        if (stats->m_flags[0] & ITEM_FLAG_HEROIC_TOOLTIP) {
             tooltip->AddLine(FrameScript_GetText("ITEM_HEROIC_EPIC", -1, GENDER_NOT_APPLICABLE), nullptr, textColor, textColor, 0);
         } else {
             SStrPrintf(format, sizeof(format), "ITEM_QUALITY%d_DESC", destroyGem ? 0 : stats->m_quality);
             tooltip->AddLine(FrameScript_GetText(format, -1, GENDER_NOT_APPLICABLE), nullptr, textColor, textColor, 0);
         }
-    } else if (stats->m_flags[0] & 8) {
+    } else if (stats->m_flags[0] & ITEM_FLAG_HEROIC_TOOLTIP) {
         tooltip->AddLine(FrameScript_GetText("ITEM_HEROIC", -1, GENDER_NOT_APPLICABLE), nullptr, greenColor, greenColor, 0);
     }
 }
@@ -4151,11 +4151,11 @@ static bool AddItemPetitionLines(CGTooltip* tooltip, CGItem_C* item, const WOWGU
     const CImVector& textColor = *reinterpret_cast<const CImVector*>(&s_tooltipTextColor);
     char text[4096];
 
-    if (!(item->GetItemStaticFlags(0) & 0x2000)) {
+    if (!(item->GetItemStaticFlags(0) & ITEM_FLAG_PETITION)) {
         return true;
     }
 
-    int32_t petitionId = (item->GetItemStaticFlags(0) & 0x2000) ? item->m_item->m_itemFieldEnchantment[0].m_id : 0;
+    int32_t petitionId = (item->GetItemStaticFlags(0) & ITEM_FLAG_PETITION) ? item->m_item->m_itemFieldEnchantment[0].m_id : 0;
     CGPetition* petition = g_petitionCache.GetRecord(petitionId, *itemGuid, TooltipItemCallback, tooltip, true);
 
     if (!petition) {
@@ -4296,7 +4296,7 @@ static const LockRec* AddItemBindLines(CGTooltip* tooltip, const ItemStats_C* st
         }
     }
 
-    if (stats->m_flags[0] & 2) {
+    if (stats->m_flags[0] & ITEM_FLAG_CONJURED) {
         FormatString("ITEM_CONJURED", -1, GENDER_NOT_APPLICABLE, format, sizeof(format));
         tooltip->AddLine(format, nullptr, textColor, textColor, 0);
     }
@@ -4393,7 +4393,7 @@ static const LockRec* AddItemBindLines(CGTooltip* tooltip, const ItemStats_C* st
         }
     }
 
-    if (item && (item->m_item->m_itemFieldFlags & 4)) {
+    if (item && (item->m_item->m_itemFieldFlags & ITEM_DFLAG_UNLOCKED)) {
         return nullptr;
     }
 
@@ -4766,7 +4766,7 @@ static int32_t AddItemSocketLines(CGTooltip* tooltip, const ItemStats_C* stats, 
         int32_t enchantId;
 
         if (item) {
-            enchantId = (item->GetItemStaticFlags(0) & 0x2000) ? 0 : item->m_item->m_itemFieldEnchantment[slot].m_id;
+            enchantId = (item->GetItemStaticFlags(0) & ITEM_FLAG_PETITION) ? 0 : item->m_item->m_itemFieldEnchantment[slot].m_id;
         } else {
             enchantId = tooltip->m_itemLinkInfo.m_enchants[slot];
         }
@@ -4776,7 +4776,7 @@ static int32_t AddItemSocketLines(CGTooltip* tooltip, const ItemStats_C* stats, 
 
         if (socket <= 2 && socketPreview) {
             WOWGUID gemGuid = socket < 3 ? CGItemSocketInfo::m_gemItems[socket] : WOWGUID{ 0 };
-            CGItem_C* gemItem = static_cast<CGItem_C*>(ClntObjMgrObjectPtr(gemGuid, TYPEMASK_ITEM, __FILE__, __LINE__));
+            CGItem_C* gemItem = static_cast<CGItem_C*>(ClntObjMgrObjectPtr(gemGuid, TYPE_ITEM, __FILE__, __LINE__));
             SpellItemEnchantmentRec* current = g_spellItemEnchantmentDB.GetRecord(abs(enchantId));
 
             if (gemItem) {
@@ -4832,7 +4832,7 @@ static int32_t AddItemSocketLines(CGTooltip* tooltip, const ItemStats_C* stats, 
             int32_t prismaticId = 0;
 
             if (item) {
-                prismaticId = (item->GetItemStaticFlags(0) & 0x2000) ? 0 : item->m_item->m_itemFieldEnchantment[6].m_id;
+                prismaticId = (item->GetItemStaticFlags(0) & ITEM_FLAG_PETITION) ? 0 : item->m_item->m_itemFieldEnchantment[6].m_id;
             } else if (tooltip->m_itemUseLinkInfo) {
                 prismaticId = tooltip->m_itemLinkInfo.m_enchants[6];
             }
@@ -4891,7 +4891,7 @@ static int32_t AddItemSocketLines(CGTooltip* tooltip, const ItemStats_C* stats, 
             *useSpell = enchant->m_effectArg[0];
 
             if (item) {
-                *useCharges = (item->GetItemStaticFlags(0) & 0x2000) ? 0 : item->m_item->m_itemFieldEnchantment[slot].m_charges;
+                *useCharges = (item->GetItemStaticFlags(0) & ITEM_FLAG_PETITION) ? 0 : item->m_item->m_itemFieldEnchantment[slot].m_charges;
             } else {
                 *useCharges = tooltip->m_itemLinkInfo.m_enchantCharges[slot];
             }
@@ -4925,14 +4925,14 @@ static int32_t AddItemSocketLines(CGTooltip* tooltip, const ItemStats_C* stats, 
             SStrCopy(text, format, sizeof(text));
         }
 
-        if (!item || !(item->GetItemStaticFlags(0) & 0x2000)) {
+        if (!item || !(item->GetItemStaticFlags(0) & ITEM_FLAG_PETITION)) {
             int32_t hasCharges = item ? item->m_item->m_itemFieldEnchantment[slot].m_charges : tooltip->m_itemLinkInfo.m_enchantCharges[slot];
 
             if (hasCharges) {
                 int32_t count;
 
                 if (item) {
-                    count = (item->GetItemStaticFlags(0) & 0x2000) ? 0 : item->m_item->m_itemFieldEnchantment[slot].m_charges;
+                    count = (item->GetItemStaticFlags(0) & ITEM_FLAG_PETITION) ? 0 : item->m_item->m_itemFieldEnchantment[slot].m_charges;
                 } else {
                     count = tooltip->m_itemLinkInfo.m_enchantCharges[slot];
                 }
@@ -4968,7 +4968,7 @@ static int32_t AddItemSocketLines(CGTooltip* tooltip, const ItemStats_C* stats, 
         bool prismaticEmpty;
 
         if (item) {
-            prismaticEmpty = (item->GetItemStaticFlags(0) & 0x2000) || !item->m_item->m_itemFieldEnchantment[6].m_id;
+            prismaticEmpty = (item->GetItemStaticFlags(0) & ITEM_FLAG_PETITION) || !item->m_item->m_itemFieldEnchantment[6].m_id;
         } else {
             prismaticEmpty = !tooltip->m_itemLinkInfo.m_enchants[6];
         }
@@ -4985,7 +4985,7 @@ static int32_t AddItemSocketLines(CGTooltip* tooltip, const ItemStats_C* stats, 
             }
         } else if (!stats->m_socketColor[socket] || !prismaticEmpty) {
             if (item) {
-                if (!(item->GetItemStaticFlags(0) & 0x2000)) {
+                if (!(item->GetItemStaticFlags(0) & ITEM_FLAG_PETITION)) {
                     socketEnchantId = item->m_item->m_itemFieldEnchantment[slot].m_id;
                 }
             } else if (tooltip->m_itemUseLinkInfo) {
@@ -5006,7 +5006,7 @@ static int32_t AddItemSocketLines(CGTooltip* tooltip, const ItemStats_C* stats, 
         }
 
         if (conditionLine) {
-            CGPlayer_C* gemOwner = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(owner, TYPEMASK_PLAYER, __FILE__, __LINE__));
+            CGPlayer_C* gemOwner = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(owner, TYPE_PLAYER, __FILE__, __LINE__));
             int32_t conditionsMet;
 
             if (gemOwner) {
@@ -5039,7 +5039,7 @@ static int32_t AddItemSocketLines(CGTooltip* tooltip, const ItemStats_C* stats, 
                 }
 
                 char texture[260];
-                const char* path = ClientDBStringLookup(3);
+                const char* path = ClientDBStringLookup(SLOOKUP_INVENTORYICONPATH);
                 SStrPrintf(texture, sizeof(texture), "%s%s%s", path, *path ? "\\" : "", CGItem_C::GetInventoryArt(gem->m_displayId));
                 CAaRect coords = { 0.0f, 0.0f, 1.0f, 1.0f };
                 uint32_t textureColor = 0xFFFFFFFF;
@@ -5215,21 +5215,21 @@ static int32_t AddItemDurabilityLines(CGTooltip* tooltip, const ItemStats_C* sta
             link.m_maxDurability = stats->m_maxDurability;
         }
 
-        if ((item && !(item->m_item->m_itemFieldFlags & 8) && item->m_item->m_itemFieldMaxdurability) || (useLinkInfo && link.m_maxDurability)) {
+        if ((item && !(item->m_item->m_itemFieldFlags & ITEM_DFLAG_WRAPPED) && item->m_item->m_itemFieldMaxdurability) || (useLinkInfo && link.m_maxDurability)) {
             SStrCopy(format, FrameScript_GetText("DURABILITY_TEMPLATE", -1, GENDER_NOT_APPLICABLE), sizeof(format));
             uint32_t durability;
             uint32_t maxDurability;
 
-            if (item && !(item->m_item->m_itemFieldFlags & 8) && item->m_item->m_itemFieldMaxdurability) {
-                durability = (item->m_item->m_itemFieldFlags & 8) ? 0 : item->m_item->m_itemFieldDurability;
+            if (item && !(item->m_item->m_itemFieldFlags & ITEM_DFLAG_WRAPPED) && item->m_item->m_itemFieldMaxdurability) {
+                durability = (item->m_item->m_itemFieldFlags & ITEM_DFLAG_WRAPPED) ? 0 : item->m_item->m_itemFieldDurability;
             } else if (tooltip->m_itemUseLinkInfo && link.m_maxDurability) {
                 durability = link.m_durability;
             } else {
                 durability = stats->m_maxDurability;
             }
 
-            if (item && !(item->m_item->m_itemFieldFlags & 8) && item->m_item->m_itemFieldMaxdurability) {
-                maxDurability = (item->m_item->m_itemFieldFlags & 8) ? 0 : item->m_item->m_itemFieldMaxdurability;
+            if (item && !(item->m_item->m_itemFieldFlags & ITEM_DFLAG_WRAPPED) && item->m_item->m_itemFieldMaxdurability) {
+                maxDurability = (item->m_item->m_itemFieldFlags & ITEM_DFLAG_WRAPPED) ? 0 : item->m_item->m_itemFieldMaxdurability;
             } else if (!tooltip->m_itemUseLinkInfo || (maxDurability = link.m_maxDurability) == 0) {
                 maxDurability = stats->m_maxDurability;
             }
@@ -5488,7 +5488,7 @@ static void AddItemRequirementLines(CGTooltip* tooltip, const ItemStats_C* stats
 
         if (spell.m_implicitTargetA[0] == 5 || spell.m_implicitTargetB[0] == 5) {
             CGUnitData* unit = player->m_unit;
-            learner = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(unit->m_unitFieldCharm ? unit->m_unitFieldCharm : unit->m_unitFieldSummon, TYPEMASK_UNIT, __FILE__, __LINE__));
+            learner = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(unit->m_unitFieldCharm ? unit->m_unitFieldCharm : unit->m_unitFieldSummon, TYPE_UNIT, __FILE__, __LINE__));
         } else {
             learner = player;
         }
@@ -6221,7 +6221,7 @@ static void AddItemCreatorLines(CGTooltip* tooltip, const ItemStats_C* stats, CG
 
     uint32_t flags = stats->m_flags[0];
 
-    if (!tooltip->m_itemUseLinkInfo && (((flags & 4) && (!stats->m_lockId || (item->m_item->m_itemFieldFlags & 4))) || ((flags & 0x200) && (item->m_item->m_itemFieldFlags & 8)))) {
+    if (!tooltip->m_itemUseLinkInfo && (((flags & ITEM_FLAG_HAS_LOOT) && (!stats->m_lockId || (item->m_item->m_itemFieldFlags & ITEM_DFLAG_UNLOCKED))) || ((flags & ITEM_FLAG_IS_WRAPPER) && (item->m_item->m_itemFieldFlags & ITEM_DFLAG_WRAPPED)))) {
         tooltip->AddLine(FrameScript_GetText("ITEM_OPENABLE", -1, GENDER_NOT_APPLICABLE), nullptr, greenColor, greenColor, 0);
     } else if (item->GetPageTextID(nullptr) || (item->m_item->m_itemFieldFlags & 0x200)) {
         tooltip->AddLine(FrameScript_GetText("ITEM_READABLE", -1, GENDER_NOT_APPLICABLE), nullptr, greenColor, greenColor, 0);
@@ -6291,7 +6291,7 @@ static int32_t AddItemTradeLines(CGTooltip* tooltip, const ItemStats_C* stats, C
             tooltip->AddLine(text, nullptr, refundColor, refundColor, 1);
             refundable = 1;
         }
-    } else if ((stats->m_flags[0] & 0x1000) && !(item->m_itemFlags & 4)) {
+    } else if ((stats->m_flags[0] & ITEM_FLAG_ITEM_PURCHASE_RECORD) && !(item->m_itemFlags & 4)) {
         item->RequestItemPurchaseData();
         refundable = 1;
     }
@@ -6399,7 +6399,7 @@ int32_t CGTooltip::SetItem(int32_t itemId, const WOWGUID* requester, const WOWGU
         this->ClearTooltip();
     }
 
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (!player) {
         this->Hide();
@@ -6409,7 +6409,7 @@ int32_t CGTooltip::SetItem(int32_t itemId, const WOWGUID* requester, const WOWGU
     CGPlayer_C* ownerPlayer = nullptr;
 
     if (owner) {
-        ownerPlayer = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(owner, TYPEMASK_PLAYER, __FILE__, __LINE__));
+        ownerPlayer = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(owner, TYPE_PLAYER, __FILE__, __LINE__));
     }
 
     if (!append) {
@@ -6431,9 +6431,9 @@ int32_t CGTooltip::SetItem(int32_t itemId, const WOWGUID* requester, const WOWGU
         return this->SetItemNoStats();
     }
 
-    CGItem_C* item = static_cast<CGItem_C*>(ClntObjMgrObjectPtr(*itemGuid, TYPEMASK_ITEM, __FILE__, __LINE__));
+    CGItem_C* item = static_cast<CGItem_C*>(ClntObjMgrObjectPtr(*itemGuid, TYPE_ITEM, __FILE__, __LINE__));
     int32_t needsUpdate = 0;
-    int32_t wrapped = (item && (item->m_item->m_itemFieldFlags & 8)) || (this->m_itemUseLinkInfo && this->m_itemLinkInfo.m_wrapped);
+    int32_t wrapped = (item && (item->m_item->m_itemFieldFlags & ITEM_DFLAG_WRAPPED)) || (this->m_itemUseLinkInfo && this->m_itemLinkInfo.m_wrapped);
     int32_t randomPropertiesId = 0;
     int32_t useSpell = 0;
     int32_t useCharges = 0;
@@ -6482,7 +6482,7 @@ int32_t CGTooltip::SetItem(int32_t itemId, const WOWGUID* requester, const WOWGU
         return 0;
     }
 
-    if (stats->m_flags[0] & 0x2000) {
+    if (stats->m_flags[0] & ITEM_FLAG_PETITION) {
         const CImVector& greenColor = *reinterpret_cast<const CImVector*>(&s_tooltipGreenColor);
         this->AddLine(FrameScript_GetText("ITEM_SIGNABLE", -1, GENDER_NOT_APPLICABLE), nullptr, greenColor, greenColor, 0);
     }
@@ -6645,7 +6645,7 @@ int32_t CGTooltip::SetItem(int32_t itemId, const WOWGUID* requester, const WOWGU
 
         int32_t refundable = item ? AddItemTradeLines(this, stats, item, player) : 0;
 
-        if (CursorGetResetMode() != 17 && !refundable && !this->m_itemSkipSellPrice && !skipSellPrice) {
+        if (CursorGetResetMode() != REPAIR_CURSOR && !refundable && !this->m_itemSkipSellPrice && !skipSellPrice) {
             AddItemSellPrice(this, stats, item, player);
         }
     }
@@ -6932,7 +6932,7 @@ int32_t CGTooltip::SetItemDelta(const CGItemStatsSummary* summary, int32_t appen
 // VERIFY: 39a89fbc manual
 // OFFSET: 0x00630C70
 int32_t CGItemStatsSummary::CreateFromTooltip(CGTooltip* tooltip) {
-    CGItem_C* item = static_cast<CGItem_C*>(ClntObjMgrObjectPtr(tooltip->m_itemGuid, TYPEMASK_ITEM, __FILE__, __LINE__));
+    CGItem_C* item = static_cast<CGItem_C*>(ClntObjMgrObjectPtr(tooltip->m_itemGuid, TYPE_ITEM, __FILE__, __LINE__));
 
     if (item) {
         this->Create(item, tooltip->m_itemDisplayedLevel);
@@ -7093,7 +7093,7 @@ int32_t CGItemStatsSummary::GetItemComparison(CGTooltip* first, CGTooltip* secon
 
     for (int32_t i = 0; i < 2; i++) {
         CGTooltip* tooltip = i ? second : first;
-        CGItem_C* item = static_cast<CGItem_C*>(ClntObjMgrObjectPtr(tooltip->m_itemGuid, TYPEMASK_ITEM, __FILE__, __LINE__));
+        CGItem_C* item = static_cast<CGItem_C*>(ClntObjMgrObjectPtr(tooltip->m_itemGuid, TYPE_ITEM, __FILE__, __LINE__));
 
         if (item) {
             itemIds[i] = item->m_obj->m_entryID;
@@ -7809,7 +7809,7 @@ void CGTooltip::SetObject(const WOWGUID& guid) {
 
     this->ClearTooltip();
 
-    CGGameObject_C* object = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(guid, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__));
+    CGGameObject_C* object = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(guid, TYPE_GAMEOBJECT, __FILE__, __LINE__));
 
     if (!object) {
         this->Hide();

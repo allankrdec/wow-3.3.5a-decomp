@@ -108,7 +108,7 @@ int32_t SI2::HandleWaterSounds(const void* data, void* param) {
         return 1;
     }
 
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (!player || !player->m_worldObject || !_OkToQueryLiquidSounds()) {
         return 1;

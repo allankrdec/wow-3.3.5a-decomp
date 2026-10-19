@@ -187,7 +187,7 @@ static int32_t Script_HasPetSpells(lua_State* L) {
     }
 
     lua_pushnumber(L, CGSpellBook::m_numPetSpells);
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (!player) {
         lua_pushstring(L, "PET");
@@ -673,7 +673,7 @@ static int32_t Script_IsUsableSpell(lua_State* L) {
     CGUnit_C* caster;
 
     if (g_spellDB.GetRecord(spellId, &spell)
-        && (caster = petSpell ? static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPEMASK_UNIT, __FILE__, __LINE__)) : static_cast<CGUnit_C*>(ClntObjMgrGetActivePlayerObj()))
+        && (caster = petSpell ? static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPE_UNIT, __FILE__, __LINE__)) : static_cast<CGUnit_C*>(ClntObjMgrGetActivePlayerObj()))
         && Spell_C_IsUsableAction(caster, &spell, WOWGUID{ 0 }, nullptr, false)
         && !(noMana = !Spell_C_HaveSpellPower(caster, &spell))) {
         lua_pushnumber(L, 1.0);
@@ -707,7 +707,7 @@ static int32_t Script_SpellHasRange(lua_State* L) {
     float maxRange;
 
     if (g_spellDB.GetRecord(spellId, &spell)
-        && (caster = petSpell ? static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPEMASK_UNIT, __FILE__, __LINE__)) : static_cast<CGUnit_C*>(ClntObjMgrGetActivePlayerObj()))) {
+        && (caster = petSpell ? static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPE_UNIT, __FILE__, __LINE__)) : static_cast<CGUnit_C*>(ClntObjMgrGetActivePlayerObj()))) {
         Spell_C_GetMinMaxRange(caster, &spell, &minRange, &maxRange, nullptr);
 
         if (fnotequal(minRange, 0.0f) || fnotequal(maxRange, 0.0f)) {
@@ -738,7 +738,7 @@ static int32_t Script_IsSpellInRange(lua_State* L) {
     uint8_t inRange;
 
     if (g_spellDB.GetRecord(spellId, &spell)
-        && (caster = petSpell ? static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPEMASK_UNIT, __FILE__, __LINE__)) : static_cast<CGUnit_C*>(ClntObjMgrGetActivePlayerObj()))
+        && (caster = petSpell ? static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPE_UNIT, __FILE__, __LINE__)) : static_cast<CGUnit_C*>(ClntObjMgrGetActivePlayerObj()))
         && Script_GetGUIDFromToken(lua_tolstring(L, unitIndex, nullptr), target, true)
         && Spell_C_RangeCheckSelected(caster, &spell, target, &inRange, false, nullptr)) {
         lua_pushnumber(L, inRange ? 1.0 : 0.0);
@@ -1022,7 +1022,7 @@ static int32_t Script_CastSpellByID(lua_State* L) {
         action = &petAction;
     }
 
-    CGUnit_C* pet = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* pet = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPE_UNIT, __FILE__, __LINE__));
 
     if (!pet) {
         return 0;
@@ -1120,7 +1120,7 @@ static int32_t Script_CastSpellByName(lua_State* L) {
         action = &petAction;
     }
 
-    CGUnit_C* pet = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* pet = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPE_UNIT, __FILE__, __LINE__));
 
     if (!pet) {
         return 0;
@@ -1209,7 +1209,7 @@ static int32_t Script_GetSpellInfo(lua_State* L) {
     }
 
     CGPlayer_C* player = ClntObjMgrGetActivePlayerObj();
-    CGUnit_C* caster = petSpell ? static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPEMASK_UNIT, __FILE__, __LINE__)) : player;
+    CGUnit_C* caster = petSpell ? static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPE_UNIT, __FILE__, __LINE__)) : player;
 
     lua_pushstring(L, spell.m_name);
     lua_pushstring(L, spell.m_nameSubtext);

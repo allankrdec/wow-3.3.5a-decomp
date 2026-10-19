@@ -154,7 +154,7 @@ static int32_t Script_RemoveGlyphFromSocket(lua_State* L) {
     }
 
     uint32_t index = static_cast<uint32_t>(lua_tonumber(L, 1)) - 1;
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (index < 6 && player && player->m_player->m_playerFieldGlyphSlots1[index]) {
         CDataStore msg;

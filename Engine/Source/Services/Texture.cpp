@@ -654,7 +654,7 @@ int32_t TextureLoadBlpMips(char* fileName, char* extension, int32_t flags, MipBi
     EGxTexFormat format = GxTex_Argb8888;
     PIXEL_FORMAT pixels = PIXEL_ARGB8888;
 
-    if (image.m_header.m_colorEncoding == 2) {
+    if (image.m_header.m_colorEncoding == COLOR_DXT) {
         pixels = static_cast<PIXEL_FORMAT>(image.m_header.m_preferredFormat);
 
         if (pixels == PIXEL_DXT1) {

@@ -318,7 +318,7 @@ void CWorldScene::RenderStreamingRequestDecal(CM2Model* model, const CAaBox* box
     float alpha = 0.0f;
 
     if (0.0f == scale) {
-        GxRsSet(GxRs_DepthFunc, 1);
+        GxRsSet(GxRs_DepthFunc, GxCmp_Equal);
         alpha = 0.0f;
     }
 

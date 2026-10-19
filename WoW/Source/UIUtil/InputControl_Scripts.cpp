@@ -21,7 +21,7 @@
 // VERIFY: 46af036c manual
 // OFFSET: 0x005FBF80
 static int32_t Script_JumpOrAscendStart(lua_State* L) {
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!mover) {
         return 0;
@@ -48,7 +48,7 @@ static int32_t Script_JumpOrAscendStart(lua_State* L) {
     uint32_t time = CSimpleTop::s_eventTime;
 
     if (mover->GetClientStandState()) {
-        mover->ChangeStandState(0);
+        mover->ChangeStandState(UNIT_STANDING);
     }
 
     if (ClntObjMgrGetActivePlayerObj()) {
@@ -97,7 +97,7 @@ static int32_t Script_ToggleRun(lua_State* L) {
         return 0;
     }
 
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!mover) {
         return 0;
@@ -638,7 +638,7 @@ static int32_t Script_VehicleAimGetNormAngle(lua_State* L) {
 static int32_t Script_VehicleAimRequestAngle(lua_State* L) {
     CGInputControl* inputControl = CGInputControl::s_inputControl;
     uint32_t time = CSimpleTop::s_eventTime;
-    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* unit = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (unit) {
         VehicleRec* rec = unit->m_vehicle ? unit->m_vehicle->m_vehicleRec : nullptr;
@@ -697,7 +697,7 @@ static int32_t Script_DetectWowMouse(lua_State* L) {
 // VERIFY: 67de4681 manual
 // OFFSET: 0x005FB660
 static int32_t Script_VehicleExit(lua_State* L) {
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!mover) {
         return 0;
@@ -715,7 +715,7 @@ static int32_t Script_VehicleExit(lua_State* L) {
 // VERIFY: aedf0962 manual
 // OFFSET: 0x005FB6D0
 static int32_t Script_VehiclePrevSeat(lua_State* L) {
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (mover && CGInputControl::s_inputControl->IsVehicleSeatFlagSet(0x4000000)) {
         mover->VehiclePrevSeat();
@@ -727,7 +727,7 @@ static int32_t Script_VehiclePrevSeat(lua_State* L) {
 // VERIFY: 5481f00f manual
 // OFFSET: 0x005FB720
 static int32_t Script_VehicleNextSeat(lua_State* L) {
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (mover && CGInputControl::s_inputControl->IsVehicleSeatFlagSet(0x4000000)) {
         mover->VehicleNextSeat();

@@ -1,4 +1,5 @@
 #include "Map.h"
+#include "WoW/Source/WorldClient/WorldConstants.h"
 #include "Engine/Source/ShaderEffect/ShadowCache.h"
 #if defined(_MSC_VER)
 #include <malloc.h>
@@ -280,7 +281,7 @@ uint32_t* CMap::chunkLiquidHeap;
 TSList<CMapDoodadDef, TSGetExplicitLink<CMapDoodadDef> > CMap::doodadDefList = TSExplicitList<CMapDoodadDef, offsetof(CMapDoodadDef, m_doodadDefLink)>();
 
 // STATIC: 0x00ADFC64
-C3Vector CMap::s_subchunkCoords[5] = { C3Vector(0.0f, 0.0f, 0.0f), C3Vector(0.0f, -4.1666665f, 0.0f), C3Vector(-4.1666665f, -4.1666665f, 0.0f), C3Vector(-4.1666665f, 0.0f, 0.0f), C3Vector(-2.0833333f, -2.0833333f, 0.0f) };
+C3Vector CMap::s_subchunkCoords[5] = { C3Vector(0.0f, 0.0f, 0.0f), C3Vector(0.0f, -SMOLTILE_SIZE, 0.0f), C3Vector(-SMOLTILE_SIZE, -SMOLTILE_SIZE, 0.0f), C3Vector(-SMOLTILE_SIZE, 0.0f, 0.0f), C3Vector(-2.0833333f, -2.0833333f, 0.0f) };
 
 // STATIC: 0x00A3FAF0
 uint32_t CMap::s_holeMask[16] = { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, 0x80, 0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000, 0x8000 };
@@ -866,8 +867,8 @@ bool CMap::QueryShadow(C3Vector* pos) {
         return false;
     }
 
-    int32_t cellX = CMath::fint_(y * 0.029999999f - 0.5f);
-    int32_t cellY = CMath::fint_(x * 0.029999999f - 0.5f);
+    int32_t cellX = CMath::fint_(y * OO_COORD_TO_CHUNK - 0.5f);
+    int32_t cellY = CMath::fint_(x * OO_COORD_TO_CHUNK - 0.5f);
     CMapArea* area = CMap::GetLoadedArea((cellX >> 4) & 0x3F, (cellY >> 4) & 0x3F);
 
     if (!area) {
@@ -891,8 +892,8 @@ bool CMap::QueryShadow(C3Vector* pos) {
 // VERIFY: cdb37c44 manual
 // OFFSET: 0x007A0820
 bool CMap::QueryLiquidTerrain(const C3Vector* pos, int32_t* liquidType, float* height, int32_t checkGround) {
-    float cellYf = -(pos->y - 17066.666f) * 0.24f;
-    float cellXf = 0.24f * -(pos->x - 17066.666f);
+    float cellYf = -(pos->y - 17066.666f) * OO_COORD_TO_SUBCHUNK;
+    float cellXf = OO_COORD_TO_SUBCHUNK * -(pos->x - 17066.666f);
     int32_t cellX = CMath::fint_(cellYf - 0.5f);
     int32_t cellY = CMath::fint_(cellXf - 0.5f);
 
@@ -1060,7 +1061,7 @@ void CMap::VectorIntersectDX(C3Vector& start, C3Vector& end, CiRect& cells) {
         step = 1;
     }
 
-    float edge = next * 4.1666665f;
+    float edge = next * SMOLTILE_SIZE;
 
     CMap::scCollideList.m_data[CMap::cCount++] = x;
     CMap::scCollideList.m_data[CMap::cCount++] = y;
@@ -1070,7 +1071,7 @@ void CMap::VectorIntersectDX(C3Vector& start, C3Vector& end, CiRect& cells) {
             return;
         }
 
-        int32_t edgeY = CMath::fint_((slope * edge + intercept) * 0.24f - 0.5f);
+        int32_t edgeY = CMath::fint_((slope * edge + intercept) * OO_COORD_TO_SUBCHUNK - 0.5f);
 
         if (edgeY != y) {
             CMap::scCollideList.m_data[CMap::cCount++] = x;
@@ -1078,7 +1079,7 @@ void CMap::VectorIntersectDX(C3Vector& start, C3Vector& end, CiRect& cells) {
         }
 
         x += step;
-        edge = step * 4.1666665f + edge;
+        edge = step * SMOLTILE_SIZE + edge;
 
         CMap::scCollideList.m_data[CMap::cCount++] = x;
         CMap::scCollideList.m_data[CMap::cCount++] = edgeY;
@@ -1112,7 +1113,7 @@ void CMap::VectorIntersectDY(C3Vector& start, C3Vector& end, CiRect& cells) {
         step = 1;
     }
 
-    float edge = next * 4.1666665f;
+    float edge = next * SMOLTILE_SIZE;
 
     CMap::scCollideList.m_data[CMap::cCount++] = cells.minX;
     CMap::scCollideList.m_data[CMap::cCount++] = cells.minY;
@@ -1122,7 +1123,7 @@ void CMap::VectorIntersectDY(C3Vector& start, C3Vector& end, CiRect& cells) {
             return;
         }
 
-        int32_t edgeX = CMath::fint_((edge - intercept) * invSlope * 0.24f - 0.5f);
+        int32_t edgeX = CMath::fint_((edge - intercept) * invSlope * OO_COORD_TO_SUBCHUNK - 0.5f);
 
         if (edgeX != x) {
             CMap::scCollideList.m_data[CMap::cCount++] = edgeX;
@@ -1130,7 +1131,7 @@ void CMap::VectorIntersectDY(C3Vector& start, C3Vector& end, CiRect& cells) {
         }
 
         CMap::scCollideList.m_data[CMap::cCount++] = edgeX;
-        edge = step * 4.1666665f + edge;
+        edge = step * SMOLTILE_SIZE + edge;
         y += step;
         CMap::scCollideList.m_data[CMap::cCount++] = y;
 
@@ -1448,10 +1449,10 @@ bool CMap::VectorIntersectTerrain(C3Vector* start, C3Vector* end, float* distanc
     float dY = endY - startY;
 
     CiRect cells;
-    cells.maxY = CMath::fint_(endY * 0.24f - 0.5f);
-    cells.minX = CMath::fint_(startX * 0.24f - 0.5f);
-    cells.minY = CMath::fint_(startY * 0.24f - 0.5f);
-    cells.maxX = CMath::fint_(endX * 0.24f - 0.5f);
+    cells.maxY = CMath::fint_(endY * OO_COORD_TO_SUBCHUNK - 0.5f);
+    cells.minX = CMath::fint_(startX * OO_COORD_TO_SUBCHUNK - 0.5f);
+    cells.minY = CMath::fint_(startY * OO_COORD_TO_SUBCHUNK - 0.5f);
+    cells.maxX = CMath::fint_(endX * OO_COORD_TO_SUBCHUNK - 0.5f);
 
     CMap::cCount = 0;
 
@@ -1580,8 +1581,8 @@ bool CMap::GetHeightTerrain(CMapChunk* chunk, C3Vector& pos, int32_t cellX, int3
         return false;
     }
 
-    float originX = row * -4.1666665f;
-    float originY = -4.1666665f * col;
+    float originX = row * -SMOLTILE_SIZE;
+    float originY = -SMOLTILE_SIZE * col;
 
     float dx = pos.x - chunk->m_topLeftCoords.x;
     float dy = pos.y - chunk->m_topLeftCoords.y;
@@ -1668,8 +1669,8 @@ CMapArea* CMap::GetAreaAtPosition(const C2Vector* pos) {
 // OFFSET: 0x007B49C0
 CMapChunk* CMap::GetChunkAtPosition(const C2Vector* pos) {
     float x = -(pos->x - 17066.666f);
-    float y = -(pos->y - 17066.666f) * 0.03f;
-    x = x * 0.03f;
+    float y = -(pos->y - 17066.666f) * OO_COORD_TO_CHUNK;
+    x = x * OO_COORD_TO_CHUNK;
 
     int32_t chunkY = CMath::fint_(x - 0.5f);
     int32_t chunkX = CMath::fint_(y - 0.5f);
@@ -3428,8 +3429,8 @@ void CMap::ClassifyStaticEntityLink(CMapStaticEntity* entity, CMapObjDef* mapObj
 bool CMap::LinkStaticEntityGetChunk(C3Vector& pos, float* outHeight, CMapChunk** outChunk) {
     *outChunk = nullptr;
 
-    int32_t cellX = CMath::fint_(-(pos.y - 17066.666f) * 0.24f - 0.5f);
-    int32_t cellY = CMath::fint_(0.24f * -(pos.x - 17066.666f) - 0.5f);
+    int32_t cellX = CMath::fint_(-(pos.y - 17066.666f) * OO_COORD_TO_SUBCHUNK - 0.5f);
+    int32_t cellY = CMath::fint_(OO_COORD_TO_SUBCHUNK * -(pos.x - 17066.666f) - 0.5f);
 
     CMapArea* area = CMap::m_areaTable[64 * ((cellY >> 7) & 0x3F) + ((cellX >> 7) & 0x3F)];
 
@@ -3547,10 +3548,10 @@ bool CMap::LinkObjectToMapExterior(CMapStaticEntity* object) {
     float maxY = -(object->m_bbox.t.y - 17066.666f);
     float minX = -(object->m_bbox.b.x - 17066.666f);
 
-    int32_t lastCol = CMath::fint_(-(object->m_bbox.b.y - 17066.666f) * 0.03f - 0.5f);
-    int32_t lastRow = CMath::fint_(minX * 0.03f - 0.5f);
-    int32_t firstCol = CMath::fint_(maxY * 0.03f - 0.5f);
-    int32_t firstRow = CMath::fint_(maxX * 0.03f - 0.5f);
+    int32_t lastCol = CMath::fint_(-(object->m_bbox.b.y - 17066.666f) * OO_COORD_TO_CHUNK - 0.5f);
+    int32_t lastRow = CMath::fint_(minX * OO_COORD_TO_CHUNK - 0.5f);
+    int32_t firstCol = CMath::fint_(maxY * OO_COORD_TO_CHUNK - 0.5f);
+    int32_t firstRow = CMath::fint_(maxX * OO_COORD_TO_CHUNK - 0.5f);
 
     for (int32_t row = firstRow; row <= lastRow; row++) {
         for (int32_t col = firstCol; col <= lastCol; col++) {
@@ -4268,10 +4269,10 @@ void CMap::DestroyLight(CMapLight* light) {
 // VERIFY: 8d2bb286 auto
 // OFFSET: 0x007D9DE0
 void CMap::LinkLightToChunks(CMapLight* light) {
-    int32_t maxY = CMath::fint_(-(light->m_bbox.b.y - 17066.666f) * 0.03f - 0.5f);
-    int32_t maxX = CMath::fint_(-(light->m_bbox.b.x - 17066.666f) * 0.03f - 0.5f);
-    int32_t minY = CMath::fint_(-(light->m_bbox.t.y - 17066.666f) * 0.03f - 0.5f);
-    int32_t minX = CMath::fint_(-(light->m_bbox.t.x - 17066.666f) * 0.03f - 0.5f);
+    int32_t maxY = CMath::fint_(-(light->m_bbox.b.y - 17066.666f) * OO_COORD_TO_CHUNK - 0.5f);
+    int32_t maxX = CMath::fint_(-(light->m_bbox.b.x - 17066.666f) * OO_COORD_TO_CHUNK - 0.5f);
+    int32_t minY = CMath::fint_(-(light->m_bbox.t.y - 17066.666f) * OO_COORD_TO_CHUNK - 0.5f);
+    int32_t minX = CMath::fint_(-(light->m_bbox.t.x - 17066.666f) * OO_COORD_TO_CHUNK - 0.5f);
 
     for (int32_t x = minX; x <= maxX; x++) {
         for (int32_t y = minY; y <= maxY; y++) {
@@ -4759,10 +4760,10 @@ bool CMap::GetFacets(CAaBox* a1, CAaBox* a2, World::FacetData* a3, uint32_t a4, 
     }
 
     CiRect rect;
-    rect.maxX = CMath::fint_(bottomY * 0.24f - 0.5f);
-    rect.maxY = CMath::fint_(bottomX * 0.24f - 0.5f);
-    rect.minX = CMath::fint_(topY * 0.24f - 0.5f);
-    rect.minY = CMath::fint_(topX * 0.24f - 0.5f);
+    rect.maxX = CMath::fint_(bottomY * OO_COORD_TO_SUBCHUNK - 0.5f);
+    rect.maxY = CMath::fint_(bottomX * OO_COORD_TO_SUBCHUNK - 0.5f);
+    rect.minX = CMath::fint_(topY * OO_COORD_TO_SUBCHUNK - 0.5f);
+    rect.minY = CMath::fint_(topX * OO_COORD_TO_SUBCHUNK - 0.5f);
     bool result = true;
 
     for (int32_t y = rect.minY >> 3; y <= rect.maxY >> 3; y++) {
@@ -5099,9 +5100,9 @@ bool CMap::Intersect(C3Vector* start, C3Vector* end, C3Vector* hitPoint, float* 
 // OFFSET: 0x007A0490
 int32_t CMap::QueryAreaIdTerrain(const C3Vector* pos) {
     float x = -(pos->x - 17066.666f);
-    float y = -(pos->y - 17066.666f) * 0.03f;
+    float y = -(pos->y - 17066.666f) * OO_COORD_TO_CHUNK;
     int32_t cellY = CMath::fint_(y - 0.5f);
-    x = x * 0.03f;
+    x = x * OO_COORD_TO_CHUNK;
     int32_t cellX = CMath::fint_(x - 0.5f);
     CMapArea* area = CMap::m_areaTable[64 * ((cellX >> 4) & 0x3F) + ((cellY >> 4) & 0x3F)];
 
@@ -5371,10 +5372,10 @@ bool CMap::QueryFacets(CFrustum* frustum, World::FacetData* facets, uint32_t fla
     float bottomX = -(box.b.x - 17066.666f);
     float bottomY = -(box.b.y - 17066.666f);
     CiRect rect;
-    rect.maxX = CMath::fint_(bottomY * 0.24f - 0.5f);
-    rect.maxY = CMath::fint_(bottomX * 0.24f - 0.5f);
-    rect.minX = CMath::fint_(topY * 0.24f - 0.5f);
-    rect.minY = CMath::fint_(topX * 0.24f - 0.5f);
+    rect.maxX = CMath::fint_(bottomY * OO_COORD_TO_SUBCHUNK - 0.5f);
+    rect.maxY = CMath::fint_(bottomX * OO_COORD_TO_SUBCHUNK - 0.5f);
+    rect.minX = CMath::fint_(topY * OO_COORD_TO_SUBCHUNK - 0.5f);
+    rect.minY = CMath::fint_(topX * OO_COORD_TO_SUBCHUNK - 0.5f);
 
     for (int32_t y = rect.minY >> 3; y <= rect.maxY >> 3; y++) {
         for (int32_t x = rect.minX >> 3; x <= rect.maxX >> 3; x++) {
@@ -5402,8 +5403,8 @@ bool CMap::QueryGroundTypeTerrain(C3Vector* pos, uint32_t* groundType) {
         return false;
     }
 
-    float cellYf = x * 0.24f;
-    float cellXf = y * 0.24f;
+    float cellYf = x * OO_COORD_TO_SUBCHUNK;
+    float cellXf = y * OO_COORD_TO_SUBCHUNK;
     int32_t cellY = CMath::fint_(cellYf - 0.5f);
     int32_t cellX = CMath::fint_(cellXf - 0.5f);
 
@@ -5441,9 +5442,9 @@ bool CMap::QueryGroundTypeTerrain(C3Vector* pos, uint32_t* groundType) {
 // OFFSET: 0x0079D2B0
 void CMap::QueryLiquidSounds(C3Vector* pos, float radius, TSGrowableArray<World::LiquidQueryResult>& results) {
     float x = -(pos->x - 17066.666f);
-    float cellYf = -(pos->y - 17066.666f) * 0.24f;
+    float cellYf = -(pos->y - 17066.666f) * OO_COORD_TO_SUBCHUNK;
     int32_t cellY = CMath::fint_(cellYf - 0.5f);
-    x = x * 0.24f;
+    x = x * OO_COORD_TO_SUBCHUNK;
     int32_t cellX = CMath::fint_(x - 0.5f);
 
     CAaSphere sphere;
@@ -5727,8 +5728,8 @@ bool CMap::QueryHeight(const C3Vector& position, float range, float* height) {
     CMapChunk* chunk = nullptr;
 
     if (!CMap::bDungeon) {
-        float chunkY = -(position.y - 17066.666f) * 0.24f;
-        float chunkX = 0.24f * -(position.x - 17066.666f);
+        float chunkY = -(position.y - 17066.666f) * OO_COORD_TO_SUBCHUNK;
+        float chunkX = OO_COORD_TO_SUBCHUNK * -(position.x - 17066.666f);
         int32_t cellY = CMath::fint_(chunkY - 0.5f);
         int32_t cellX = CMath::fint_(chunkX - 0.5f);
         CMapArea* area = CMap::m_areaTable[64 * ((cellX >> 7) & 0x3F) + ((cellY >> 7) & 0x3F)];
@@ -5995,10 +5996,10 @@ void CMap::SnapBaseObjToSubChunk(CMapBaseObj* baseObj, const C3Vector* position,
     C3Vector* snapped = const_cast<C3Vector*>(position);
     float x = snapped->x + rotated.t.x;
     float y = snapped->y + rotated.t.y;
-    int32_t cellX = CMath::fint_((x + 4.1666665f) * 0.24f - 0.5f);
-    int32_t cellY = CMath::fint_((y + 4.1666665f) * 0.24f - 0.5f);
-    snapped->x = snapped->x - (x - cellX * 4.1666665f);
-    snapped->y = snapped->y - (y - 4.1666665f * cellY);
+    int32_t cellX = CMath::fint_((x + SMOLTILE_SIZE) * OO_COORD_TO_SUBCHUNK - 0.5f);
+    int32_t cellY = CMath::fint_((y + SMOLTILE_SIZE) * OO_COORD_TO_SUBCHUNK - 0.5f);
+    snapped->x = snapped->x - (x - cellX * SMOLTILE_SIZE);
+    snapped->y = snapped->y - (y - SMOLTILE_SIZE * cellY);
 }
 
 // VERIFY: 153db93c manual
@@ -6261,10 +6262,10 @@ bool CMap::GetTrisChunk(int32_t chunkX, int32_t chunkY, const CiRect& cellRect, 
 bool CMap::GetTrisTerrain(const CAaBox& box, World::TriData* triData, uint32_t flags) {
     bool result = false;
     CiRect cellRect;
-    cellRect.minY = CMath::fint_(-(box.t.x - 17066.666f) * 0.23999999f - 0.5f);
-    cellRect.minX = CMath::fint_(-(box.t.y - 17066.666f) * 0.23999999f - 0.5f);
-    cellRect.maxY = CMath::fint_(-(box.b.x - 17066.666f) * 0.23999999f - 0.5f);
-    cellRect.maxX = CMath::fint_(-(box.b.y - 17066.666f) * 0.23999999f - 0.5f);
+    cellRect.minY = CMath::fint_(-(box.t.x - 17066.666f) * OO_COORD_TO_SUBCHUNK - 0.5f);
+    cellRect.minX = CMath::fint_(-(box.t.y - 17066.666f) * OO_COORD_TO_SUBCHUNK - 0.5f);
+    cellRect.maxY = CMath::fint_(-(box.b.x - 17066.666f) * OO_COORD_TO_SUBCHUNK - 0.5f);
+    cellRect.maxX = CMath::fint_(-(box.b.y - 17066.666f) * OO_COORD_TO_SUBCHUNK - 0.5f);
 
     for (int32_t chunkY = cellRect.minY >> 3; chunkY <= cellRect.maxY >> 3; chunkY++) {
         for (int32_t chunkX = cellRect.minX >> 3; chunkX <= cellRect.maxX >> 3; chunkX++) {

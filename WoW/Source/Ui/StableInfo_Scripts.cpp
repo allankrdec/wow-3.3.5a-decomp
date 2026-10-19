@@ -171,7 +171,7 @@ static int32_t Script_SetPetStablePaperdoll(lua_State* L) {
     CreatureStats_C* stats;
 
     if (selected == -1) {
-        CGUnit_C* pet = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPEMASK_UNIT, __FILE__, __LINE__));
+        CGUnit_C* pet = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGPetInfo::GetPet(0), TYPE_UNIT, __FILE__, __LINE__));
 
         if (pet && pet->CanGainXP() && pet->m_creatureCacheEntry) {
             stats = pet->m_creatureCacheEntry;

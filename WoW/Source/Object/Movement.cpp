@@ -842,7 +842,7 @@ int32_t CMovement_C::UpdateTransportStatus(WOWGUID transport, uint8_t seat) {
         uint32_t high = static_cast<uint32_t>(this->m_transportGuid.m_guid >> 32);
 
         if ((high & 0xF0F00000) == 0xF0500000 || (!(high & 0xF0000000) && ((high & 0xF07FFFFF) | static_cast<uint32_t>(this->m_transportGuid.m_guid)))) {
-            CGUnit_C* vehicle = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(this->m_transportGuid, TYPEMASK_UNIT, __FILE__, __LINE__));
+            CGUnit_C* vehicle = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(this->m_transportGuid, TYPE_UNIT, __FILE__, __LINE__));
 
             if (vehicle && vehicle->m_vehicle) {
                 vehicle->m_vehicle->UpdateFreeSeatMask();
@@ -916,7 +916,7 @@ void CMovement_C::SetUpdateInfo(uint32_t time, const CClientMoveUpdate* update, 
         this->FlushMoveQueue(0, 1);
         this->RemoveFromMoversList(0);
         this->m_spline->CopyFrom(update->m_moveSpline);
-        this->m_spline->m_spline.m_splineMode = (this->m_spline->m_flags & 0x42000) != 0;
+        this->m_spline->m_spline.splineMode = (this->m_spline->m_flags & 0x42000) != 0 ? MODE_CATMULLROM : MODE_LINEAR;
     } else {
         if (this->m_spline && (this->m_spline->m_flags & 0x800)) {
             this->m_unit->OnCollideFallLand(0, 1);
@@ -1520,7 +1520,7 @@ uint32_t CMovement_C::GetFacetQueryFlags() const {
 
     CGUnit_C* unit = this->m_unit;
 
-    if ((unit->m_obj->m_type & TYPEMASK_PLAYER) && (static_cast<CGPlayer_C*>(unit)->m_player->m_playerFlags & 0x10)) {
+    if ((unit->m_obj->m_type & TYPE_PLAYER) && (static_cast<CGPlayer_C*>(unit)->m_player->m_playerFlags & 0x10)) {
         flags |= 0x8000;
     }
 
@@ -4398,7 +4398,7 @@ void CMovement_C::CallMoveEventHandlers(uint32_t time, uint32_t remaining, uint3
         if (spline->m_flags & SPLINEFLAG_FINAL_ANGLE) {
             this->m_facing = spline->m_face.m_angle;
         } else if (spline->m_flags & SPLINEFLAG_FINAL_TARGET) {
-            CGObject_C* target = ClntObjMgrObjectPtr(spline->m_face.m_target, TYPEMASK_OBJECT, __FILE__, __LINE__);
+            CGObject_C* target = ClntObjMgrObjectPtr(spline->m_face.m_target, TYPE_OBJECT, __FILE__, __LINE__);
 
             if (target) {
                 C3Vector targetPosition = target->GetPosition();
@@ -5429,7 +5429,7 @@ int32_t CMovement_C::ForceSetTransportInt(WOWGUID transport, uint8_t seat, int32
         return 0;
     }
 
-    if (this->m_transportGuid && !ClntObjMgrObjectPtr(this->m_transportGuid, TYPEMASK_OBJECT, __FILE__, __LINE__)) {
+    if (this->m_transportGuid && !ClntObjMgrObjectPtr(this->m_transportGuid, TYPE_OBJECT, __FILE__, __LINE__)) {
         DebugLog("CMovementData_C::ForceSetTransportInt() was called with an invalid m_transportGUID: (m_transportGUID: %016I64X) (guid: %016I64X)", this->m_transportGuid, transport);
         this->m_transportGuid = WOWGUID();
         return 0;
@@ -5467,7 +5467,7 @@ int32_t CMovement_C::ForceSetTransportInt(WOWGUID transport, uint8_t seat, int32
         uint32_t high = static_cast<uint32_t>(this->m_transportGuid.m_guid >> 32);
 
         if ((high & 0xF0F00000) == 0xF0500000 || (!(high & 0xF0000000) && ((high & 0xF07FFFFF) | static_cast<uint32_t>(this->m_transportGuid.m_guid)))) {
-            CGUnit_C* vehicle = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(this->m_transportGuid, TYPEMASK_UNIT, __FILE__, __LINE__));
+            CGUnit_C* vehicle = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(this->m_transportGuid, TYPE_UNIT, __FILE__, __LINE__));
 
             if (vehicle && vehicle->m_vehicle) {
                 vehicle->m_vehicle->UpdateFreeSeatMask();
@@ -6800,7 +6800,7 @@ void CMovement_C::OnSetActiveMover() {
     CMovementGlobals* globals = MovementGetGlobals();
 
     if (this->m_transportGuid.m_guid) {
-        CGGameObject_C* transport = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(this->m_transportGuid, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__));
+        CGGameObject_C* transport = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(this->m_transportGuid, TYPE_GAMEOBJECT, __FILE__, __LINE__));
 
         if (transport) {
             uint32_t transportTime = transport->m_typeData->GetTransportUpdateTime();
@@ -6922,7 +6922,7 @@ void CMovement_C::CollideWithTransport(uint32_t time, uint32_t elapsed, float di
     uint32_t flags = this->m_unit->IsClientControlled() ? 0x111 : 0x2111;
     CGUnit_C* unit = this->m_unit;
 
-    if ((unit->m_obj->m_type & TYPEMASK_PLAYER) && (static_cast<CGPlayer_C*>(unit)->m_player->m_playerFlags & 0x10)) {
+    if ((unit->m_obj->m_type & TYPE_PLAYER) && (static_cast<CGPlayer_C*>(unit)->m_player->m_playerFlags & 0x10)) {
         flags |= 0x8000;
     }
 
@@ -6950,7 +6950,7 @@ void CMovement_C::CollideWithTransport(uint32_t time, uint32_t elapsed, float di
         return;
     }
 
-    CGGameObject_C* transport = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(this->m_transportGuid, TYPEMASK_GAMEOBJECT, __FILE__, __LINE__));
+    CGGameObject_C* transport = static_cast<CGGameObject_C*>(ClntObjMgrObjectPtr(this->m_transportGuid, TYPE_GAMEOBJECT, __FILE__, __LINE__));
     uint32_t eventTime = static_cast<uint32_t>(static_cast<int64_t>(moveDist / distance * static_cast<float>(elapsed) + 0.5f)) + transport->m_transportTimeOffset - elapsed + time;
     uint32_t transportTime = transport->m_typeData->GetSequenceTimeFromRealTime(eventTime);
     CMovementGlobals* globals = MovementGetGlobals();

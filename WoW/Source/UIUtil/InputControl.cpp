@@ -297,7 +297,7 @@ XMLTree* LoadJoystickConfig(XMLNode*& config) {
 // VERIFY: 62cd78e5 manual
 // OFFSET: 0x005F9D20
 CGUnit_C* GetVehicleUnitPtr() {
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!mover) {
         return nullptr;
@@ -307,7 +307,7 @@ CGUnit_C* GetVehicleUnitPtr() {
         return mover;
     }
 
-    CGUnit_C* vehicle = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(WOWGUID{ mover->GetTransportGUID() }, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* vehicle = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(WOWGUID{ mover->GetTransportGUID() }, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!vehicle || !vehicle->m_vehicle) {
         return mover;
@@ -341,7 +341,7 @@ int32_t __stdcall CGInputControl::CanControl(CGUnit_C* unit) {
 // VERIFY: 44c9ffc3 manual
 // OFFSET: 0x005FA6B0
 int32_t CGInputControl::CameraCanTurnPlayer() const {
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!mover) {
         return 0;
@@ -379,7 +379,7 @@ int32_t CGInputControl::CameraCanTurnPlayer() const {
 // VERIFY: da98c994 manual
 // OFFSET: 0x005FA910
 void CGInputControl::SendUIVehicleAngleUpdate(float angle) {
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!mover) {
         return;
@@ -411,13 +411,13 @@ void CGInputControl::SendUIVehicleAngleUpdate(float angle) {
 // VERIFY: 6da9c237 manual
 // OFFSET: 0x005FB560
 int32_t CGInputControl::IsVehicleSeatFlagSet(uint32_t flags) const {
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!mover) {
         return 0;
     }
 
-    CGUnit_C* player = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGUnit_C* player = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (!player || !player->m_vehiclePassenger || player->m_vehiclePassenger->m_state != 3) {
         return 0;
@@ -427,7 +427,7 @@ int32_t CGInputControl::IsVehicleSeatFlagSet(uint32_t flags) const {
         return 0;
     }
 
-    CGUnit_C* vehicle = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(WOWGUID{ player->GetTransportGUID() }, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* vehicle = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(WOWGUID{ player->GetTransportGUID() }, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!vehicle) {
         return 0;
@@ -491,7 +491,7 @@ int32_t CGInputControl::IsMouseDragMoving() const {
 // VERIFY: 262a3d11 manual
 // OFFSET: 0x005FA790
 int32_t CGInputControl::CameraCanPitchPlayer() {
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!mover) {
         return 0;
@@ -551,7 +551,7 @@ int32_t __stdcall CGInputControl::CanMove(CGUnit_C* unit) {
         return 0;
     }
 
-    return unit->m_unit->m_unitFieldHealth > 0 && !(unit->m_movement->m_flags & 0x100A00) && unit->m_unit->m_unitFieldBytes1[0] != 7 && !unit->HasVehicleTransport();
+    return unit->m_unit->m_unitFieldHealth > 0 && !(unit->m_movement->m_flags & 0x100A00) && unit->m_unit->m_unitFieldBytes1[0] != UNIT_DEAD && !unit->HasVehicleTransport();
 }
 
 // VERIFY: d0f5f494 auto
@@ -586,7 +586,7 @@ void __stdcall ScaleMouseDeltaByFov(float* dx, float* dy) {
 // VERIFY: c6ecfaf7 manual
 // OFFSET: 0x005FB4B0
 void CGInputControl::VehicleAimChange(uint32_t time, float delta) {
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!mover) {
         return;
@@ -601,7 +601,7 @@ void CGInputControl::VehicleAimChange(uint32_t time, float delta) {
 void CGInputControl::OnPitchToAngleStop() {
     this->m_vehicleAimValid = 0;
 
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (mover) {
         CGInputControl::SendUIVehicleAngleUpdate(mover->GetPitch());
@@ -611,7 +611,7 @@ void CGInputControl::OnPitchToAngleStop() {
 // VERIFY: b38d40e5 manual
 // OFFSET: 0x005FAB70
 void CGInputControl::OnUpdate(float elapsed) {
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!mover) {
         return;
@@ -647,9 +647,9 @@ void CGInputControl::OnMouseMoveRel(const CMouseEvent& evt) {
     uint32_t frame = g_theGxDevicePtr->m_frameCount;
     float x = evt.m_data.m_mousePosition.x;
     float y = evt.m_data.m_mousePosition.y;
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
-    if (mover && (mover->m_obj->m_type & TYPEMASK_PLAYER) && static_cast<CGPlayer_C*>(mover)->IsCommentatorUberOrInArena()) {
+    if (mover && (mover->m_obj->m_type & TYPE_PLAYER) && static_cast<CGPlayer_C*>(mover)->IsCommentatorUberOrInArena()) {
         ScaleMouseDeltaByFov(&x, &y);
     }
 
@@ -690,13 +690,13 @@ void CGInputControl::CameraTurnPlayer(uint32_t time, float facing) {
         return;
     }
 
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!mover) {
         return;
     }
 
-    if ((mover->m_obj->m_type & TYPEMASK_PLAYER) && static_cast<CGPlayer_C*>(mover)->IsCommentatorUberOrInArena()) {
+    if ((mover->m_obj->m_type & TYPE_PLAYER) && static_cast<CGPlayer_C*>(mover)->IsCommentatorUberOrInArena()) {
         CGCommentator::s_Commentator.m_facing = facing;
         return;
     }
@@ -778,13 +778,13 @@ void CGInputControl::CameraPitchPlayer(uint32_t time, float pitch) {
         return;
     }
 
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!mover) {
         return;
     }
 
-    if ((mover->m_obj->m_type & TYPEMASK_PLAYER) && static_cast<CGPlayer_C*>(mover)->IsCommentatorUberOrInArena()) {
+    if ((mover->m_obj->m_type & TYPE_PLAYER) && static_cast<CGPlayer_C*>(mover)->IsCommentatorUberOrInArena()) {
         CGCommentator::s_Commentator.m_pitch = pitch;
         return;
     }
@@ -811,7 +811,7 @@ void CGInputControl::OnTurnToAngleStop() {
 // VERIFY: bc220db8 manual
 // OFFSET: 0x005FAA40
 void CheckToCancelCurrentChannelSpell() {
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
 
     if (!player || player->m_obj->m_guid != CGUnit_C::s_activeMover) {
         return;
@@ -862,7 +862,7 @@ int32_t CGInputControl::SetControlBit(uint32_t bit, uint32_t time) {
     }
 
     if (!wasBothButtons && (this->m_flags & INPUT_TURN_PLAYER) && (this->m_flags & INPUT_TURN_CAMERA)) {
-        CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+        CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
         if (this->CanSyncFreeLookFacing(mover)) {
             camera->SyncFreeLookFacing();
@@ -1020,7 +1020,7 @@ void CGInputControl::AscendDescendPlayer(uint32_t time, CGUnit_C* unit) {
         return;
     }
 
-    if (ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__)) {
+    if (ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__)) {
         CGPlayer_C::ClearAFK(0);
     }
 
@@ -1074,7 +1074,7 @@ void CGInputControl::MovePlayer(uint32_t time, CGUnit_C* unit) {
     }
 
     if (unit->GetClientStandState()) {
-        unit->ChangeStandState(0);
+        unit->ChangeStandState(UNIT_STANDING);
         CGCamera* camera = CGWorldFrame::GetActiveCamera();
 
         if (this->CanSyncFreeLookFacing(unit)) {
@@ -1082,7 +1082,7 @@ void CGInputControl::MovePlayer(uint32_t time, CGUnit_C* unit) {
         }
     }
 
-    if (ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__)) {
+    if (ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__)) {
         CGPlayer_C::ClearAFK(0);
     }
 
@@ -1127,10 +1127,10 @@ void CGInputControl::StrafePlayer(uint32_t time, CGUnit_C* unit) {
     }
 
     if (unit->GetClientStandState()) {
-        unit->ChangeStandState(0);
+        unit->ChangeStandState(UNIT_STANDING);
     }
 
-    if (ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__)) {
+    if (ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__)) {
         CGPlayer_C::ClearAFK(0);
     }
 
@@ -1159,10 +1159,10 @@ void CGInputControl::TurnPlayer(uint32_t time, CGUnit_C* unit) {
 
     if ((!(flags & INPUT_PLAYER_LOOK_MASK) || unit->IsStrafingDisabled()) && direction) {
         if (unit->GetClientStandState()) {
-            unit->ChangeStandState(0);
+            unit->ChangeStandState(UNIT_STANDING);
         }
 
-        if (ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__)) {
+        if (ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__)) {
             CGPlayer_C::ClearAFK(0);
         }
 
@@ -1218,13 +1218,13 @@ void CGInputControl::PitchPlayer(uint32_t time, CGUnit_C* unit) {
 // VERIFY: c0d2e3b9 manual
 // OFFSET: 0x005FBBC0
 void CGInputControl::UpdatePlayer(uint32_t time, int32_t a2) {
-    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPEMASK_UNIT, __FILE__, __LINE__));
+    CGUnit_C* mover = static_cast<CGUnit_C*>(ClntObjMgrObjectPtr(CGUnit_C::s_activeMover, TYPE_UNIT, __FILE__, __LINE__));
 
     if (!mover) {
         return;
     }
 
-    if ((mover->m_obj->m_type & TYPEMASK_PLAYER) && static_cast<CGPlayer_C*>(mover)->IsCommentatorUberOrInArena()) {
+    if ((mover->m_obj->m_type & TYPE_PLAYER) && static_cast<CGPlayer_C*>(mover)->IsCommentatorUberOrInArena()) {
         CGCommentator::s_Commentator.UpdateCameraVelocity(this->m_flags, a2);
         return;
     }

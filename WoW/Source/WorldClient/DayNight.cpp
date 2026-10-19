@@ -165,8 +165,12 @@ static C2Vector s_highlightCurve[6] = { C2Vector(0.125f, 0.0f), C2Vector(0.27083
 // STATIC: 0x00AF4BAC
 static C2Vector s_skyFaceCurve[6] = { C2Vector(0.125f, 1.0f), C2Vector(0.375f, 0.0f), C2Vector(0.5f, -0.5f), C2Vector(0.625f, -0.69999999f), C2Vector(0.75f, -0.5f), C2Vector(0.875f, 0.0f) };
 
+enum SKY_CONSTANTS : int32_t {
+    SKY_NUMBANDS = 7,
+};
+
 // STATIC: 0x00A41A90
-static const float s_skyThetaTable[7] = { 0.0f, 0.17f, 0.2f, 0.23f, 0.24f, 0.25f, 1.0f };
+static const float s_skyThetaTable[SKY_NUMBANDS] = { 0.0f, 0.17f, 0.2f, 0.23f, 0.24f, 0.25f, 1.0f };
 
 // STATIC: 0x00AF4DAC
 static const uint16_t s_planetIndices[4] = { 0, 1, 2, 3 };
@@ -2465,7 +2469,7 @@ void DayNight::DNSky::GenSphere(float sphRadius) {
     uint16_t prevRowStart = 0;
     float prevTheta = 0.0f;
 
-    for (int32_t row = 0; row < 7; row++) {
+    for (int32_t row = 0; row < SKY_NUMBANDS; row++) {
         float theta = s_skyThetaTable[row] * 3.1415927f;
         float cosTheta = CMath::cos_(theta);
         float sinTheta = CMath::sin_(theta);

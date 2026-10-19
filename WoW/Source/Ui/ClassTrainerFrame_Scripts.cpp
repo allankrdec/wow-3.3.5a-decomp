@@ -40,7 +40,7 @@ static int32_t Script_GetNumTrainerServices(lua_State* L) {
 // VERIFY: ea1fc55f auto
 // OFFSET: 0x00593D50
 static int32_t Script_IsTradeskillTrainer(lua_State* L) {
-    if (CGClassTrainer::m_trainerType == 2) {
+    if (CGClassTrainer::m_trainerType == TRAINER_TYPE_TRADESKILLS) {
         lua_pushnumber(L, 1.0);
     } else {
         lua_pushnil(L);
@@ -238,7 +238,7 @@ static int32_t Script_GetTrainerServiceSkillLine(lua_State* L) {
         return 0;
     }
 
-    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPEMASK_PLAYER, __FILE__, __LINE__));
+    CGPlayer_C* player = static_cast<CGPlayer_C*>(ClntObjMgrObjectPtr(ClntObjMgrGetActivePlayer(), TYPE_PLAYER, __FILE__, __LINE__));
     uint32_t index = static_cast<uint32_t>(lua_tonumber(L, 1)) - 1;
     TrainerServiceInfo* service = index < CGClassTrainer::m_numServices ? CGClassTrainer::m_services.m_data[index] : nullptr;
 
@@ -282,20 +282,20 @@ static int32_t Script_GetTrainerServiceSkillLine(lua_State* L) {
 
 // VERIFY: 800b7538 auto
 // OFFSET: 0x00593DB0
-static int32_t GetServiceTypeFromString(const char* type) {
+static TRAINER_SERVICE GetServiceTypeFromString(const char* type) {
     if (!type) {
-        return 6;
+        return NUM_TRAINER_SERVICE_TYPES;
     }
 
     if (!SStrCmpI(type, "available", STORM_MAX_STR)) {
-        return 0;
+        return TRAINER_SERVICE_AVAILABLE;
     }
 
     if (!SStrCmpI(type, "unavailable", STORM_MAX_STR)) {
-        return 1;
+        return TRAINER_SERVICE_UNAVAILABLE;
     }
 
-    return SStrCmpI(type, "used", STORM_MAX_STR) ? 6 : 2;
+    return SStrCmpI(type, "used", STORM_MAX_STR) ? NUM_TRAINER_SERVICE_TYPES : TRAINER_SERVICE_USED;
 }
 
 // VERIFY: e17cbd49 auto
@@ -306,9 +306,9 @@ static int32_t Script_GetTrainerServiceTypeFilter(lua_State* L) {
         return 0;
     }
 
-    int32_t type = GetServiceTypeFromString(lua_tolstring(L, 1, nullptr));
+    TRAINER_SERVICE type = GetServiceTypeFromString(lua_tolstring(L, 1, nullptr));
 
-    if (type == 6) {
+    if (type == NUM_TRAINER_SERVICE_TYPES) {
         luaL_error(L, "Bad service type in GetTrainerServiceTypeFilter");
         return 0;
     }
@@ -326,7 +326,7 @@ static int32_t Script_GetTrainerServiceTypeFilter(lua_State* L) {
 // OFFSET: 0x00594370
 static int32_t Script_CloseTrainer(lua_State* L) {
     WOWGUID none = WOWGUID();
-    CGClassTrainer::SetTrainer(none, 0);
+    CGClassTrainer::SetTrainer(none, TRAINER_TYPE_GENERAL);
     return 0;
 }
 
@@ -402,8 +402,8 @@ static int32_t Script_GetTrainerServiceIcon(lua_State* L) {
 
     ItemRec* item;
 
-    if (CGClassTrainer::m_trainerType == 2 && (spell.m_effect[0] == 24 || spell.m_effect[0] == 157 || spell.m_effect[0] == 59) && (item = g_itemDB.GetRecord(spell.m_effectItemType[0]))) {
-        const char* path = ClientDBStringLookup(3);
+    if (CGClassTrainer::m_trainerType == TRAINER_TYPE_TRADESKILLS && (spell.m_effect[0] == 24 || spell.m_effect[0] == 157 || spell.m_effect[0] == 59) && (item = g_itemDB.GetRecord(spell.m_effectItemType[0]))) {
+        const char* path = ClientDBStringLookup(SLOOKUP_INVENTORYICONPATH);
         char texture[260];
         SStrPrintf(texture, sizeof(texture), "%s%s%s", path, *path ? "\\" : "", CGItem_C::GetInventoryArt(item->m_displayInfoID));
         lua_pushstring(L, texture);
@@ -646,7 +646,7 @@ static int32_t Script_GetTrainerServiceStepIncrease(lua_State* L) {
                 }
             }
 
-            if (effect < 3 && service->m_state != 2) {
+            if (effect < 3 && service->m_state != TRAINER_SERVICE_USED) {
                 int32_t previous = 0;
                 SpellRec step;
                 int32_t minPoints;
@@ -723,9 +723,9 @@ static int32_t Script_SetTrainerServiceTypeFilter(lua_State* L) {
         return 0;
     }
 
-    int32_t serviceType = GetServiceTypeFromString(type);
+    TRAINER_SERVICE serviceType = GetServiceTypeFromString(type);
 
-    if (serviceType == 6) {
+    if (serviceType == NUM_TRAINER_SERVICE_TYPES) {
         luaL_error(L, "Bad service type in SetTrainerServiceTypeFilter");
         return 0;
     }
@@ -864,7 +864,7 @@ static int32_t Script_GetTrainerServiceItemLink(lua_State* L) {
     if (index < CGClassTrainer::m_numServices && (service = CGClassTrainer::m_services.m_data[index])) {
         SpellRec spell;
 
-        if (g_spellDB.GetRecord(service->m_spellID, &spell) && CGClassTrainer::m_trainerType == 2 && (spell.m_effect[0] == 24 || spell.m_effect[0] == 157 || spell.m_effect[0] == 59) && spell.m_effectItemType[0]) {
+        if (g_spellDB.GetRecord(service->m_spellID, &spell) && CGClassTrainer::m_trainerType == TRAINER_TYPE_TRADESKILLS && (spell.m_effect[0] == 24 || spell.m_effect[0] == 157 || spell.m_effect[0] == 59) && spell.m_effectItemType[0]) {
             WOWGUID none = WOWGUID();
             ItemStats_C* stats = g_itemDBCache.GetRecord(spell.m_effectItemType[0], none, nullptr, nullptr, false);
 

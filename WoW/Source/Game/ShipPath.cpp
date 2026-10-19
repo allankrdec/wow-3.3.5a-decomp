@@ -327,7 +327,7 @@ void ShipPath::BuildLeg(ShipPathArray<C3Vector>* points, ShipPathArray<ShipPathP
     }
 
     this->m_events.SetCount(eventCount);
-    float length = this->m_legs.m_data[legIndex].m_spline.m_length;
+    float length = this->m_legs.m_data[legIndex].m_spline.cachedLength;
     float distance = length - prevDistance;
     uint32_t lastTime;
 
@@ -541,7 +541,7 @@ void ShipPath::ComputeRollAndPitch(float speed, float facing, float distance, ui
             }
 
             ShipPathLeg* pathLeg = &this->m_legs.m_data[leg];
-            float u = ahead / pathLeg->m_spline.m_length;
+            float u = ahead / pathLeg->m_spline.cachedLength;
 
             if (u < 0.0f) {
                 u = 0.0f;
@@ -668,7 +668,7 @@ void ShipPath::GetPosition(uint32_t time, uint32_t elapsed, int32_t* mapId, uint
 
 frame:
     pathLeg = &this->m_legs.m_data[*leg];
-    float u = distance / pathLeg->m_spline.m_length;
+    float u = distance / pathLeg->m_spline.cachedLength;
 
     if (u < 0.0f) {
         u = 0.0f;

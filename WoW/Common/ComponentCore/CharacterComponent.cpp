@@ -246,7 +246,7 @@ static int32_t CopyStringToBuffer(const char* src, char* dst) {
 
 // VERIFY: 576ded8c auto
 // OFFSET: 0x004E6FB0
-void* CCharacterComponent::LoadItemComponentTexture(const ItemDisplayInfoRec* displayRec, COMPONENT_SECTIONS section) {
+HTEXTURECACHE CCharacterComponent::LoadItemComponentTexture(const ItemDisplayInfoRec* displayRec, COMPONENT_SECTIONS section) {
     SStrPrintf(s_path, sizeof(s_path), "Item\\TextureComponents\\%s\\%s_%s.blp", s_componentSections[section], displayRec->m_texture[section], s_fileDecorations[2]);
 
     if (!SFile::FileExists(s_path)) {
@@ -944,7 +944,7 @@ void CCharacterComponent::PasteCrappyGreen(MipBits* dstMips, C2iVector& dstPos, 
 
 // VERIFY: 6c996c19 manual
 // OFFSET: 0x004E83A0
-void CCharacterComponent::PasteOpaque(void* texture, const BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t dstMipOffset) {
+void CCharacterComponent::PasteOpaque(HTEXTURECACHE texture, const BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t dstMipOffset) {
     uint32_t srcWidth = srcInfo.m_width;
     uint32_t width = srcSize.x;
     uint32_t height = srcSize.y;
@@ -979,7 +979,7 @@ void CCharacterComponent::PasteOpaque(void* texture, const BlpPalPixel* pal, Mip
 
 // VERIFY: 212be31e manual
 // OFFSET: 0x004E84F0
-void CCharacterComponent::PasteTransparent1Bit(void* texture, const BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t dstMipOffset) {
+void CCharacterComponent::PasteTransparent1Bit(HTEXTURECACHE texture, const BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t dstMipOffset) {
     uint32_t srcWidth = srcInfo.m_width;
     uint32_t width = srcSize.x;
     uint32_t height = srcSize.y;
@@ -1018,7 +1018,7 @@ void CCharacterComponent::PasteTransparent1Bit(void* texture, const BlpPalPixel*
 
 // VERIFY: d1dc9035 manual
 // OFFSET: 0x004E8660
-void CCharacterComponent::PasteTransparent4Bit(void* texture, const BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t dstMipOffset) {
+void CCharacterComponent::PasteTransparent4Bit(HTEXTURECACHE texture, const BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t dstMipOffset) {
     uint32_t srcWidth = srcInfo.m_width;
     uint32_t width = srcSize.x;
     uint32_t height = srcSize.y;
@@ -1061,7 +1061,7 @@ void CCharacterComponent::PasteTransparent4Bit(void* texture, const BlpPalPixel*
 
 // VERIFY: 4d979816 manual
 // OFFSET: 0x004E8840
-void CCharacterComponent::PasteTransparent8Bit(void* texture, const BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t dstMipOffset) {
+void CCharacterComponent::PasteTransparent8Bit(HTEXTURECACHE texture, const BlpPalPixel* pal, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel, int32_t dstMipOffset) {
     uint32_t srcWidth = srcInfo.m_width;
     uint32_t width = srcSize.x;
     uint32_t height = srcSize.y;
@@ -1102,7 +1102,7 @@ void CCharacterComponent::PasteTransparent8Bit(void* texture, const BlpPalPixel*
 
 // VERIFY: 8ec155b7 manual
 // OFFSET: 0x004E89F0
-void CCharacterComponent::PasteOpaqueScale(void* texture, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo) {
+void CCharacterComponent::PasteOpaqueScale(HTEXTURECACHE texture, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo) {
     uint32_t srcWidth = srcInfo.m_width;
     uint32_t width = srcSize.x;
     uint32_t height = srcSize.y;
@@ -1204,7 +1204,7 @@ CTexture* CreateTexture(const char* fileName, CStatus* status) {
 
 // VERIFY: 11ef4f44 auto
 // OFFSET: 0x004E8D70
-void CComponentRequest::AddLayer(uint8_t section, void* texture) {
+void CComponentRequest::AddLayer(uint8_t section, HTEXTURECACHE texture) {
     if (this->m_layerCount < sizeof(this->m_layerTextures) / sizeof(this->m_layerTextures[0])) {
         this->m_layerTextures[this->m_layerCount] = TextureCacheCopyTexture(texture);
         this->m_layerSections[this->m_layerCount++] = section;
@@ -1736,7 +1736,7 @@ void CCharacterComponent::ReplaceExtraSkinTexture(const char* debug) {
     CTexture* texture = CreateTexture(s_path, &s_status);
 
     if (texture) {
-        this->m_data.m_model->ReplaceTexture(8, texture);
+        this->m_data.m_model->ReplaceTexture(M2TEX_EXTRA_SKIN, texture);
         HandleClose(reinterpret_cast<HOBJECT>(texture));
     }
 }
@@ -1758,7 +1758,7 @@ void CCharacterComponent::ReplaceHairTexture(int32_t hairStyleID, const char* de
     CTexture* texture = CreateTexture(s_path, &s_status);
 
     if (texture) {
-        this->m_data.m_model->ReplaceTexture(6, texture);
+        this->m_data.m_model->ReplaceTexture(M2TEX_HAIR, texture);
         HandleClose(reinterpret_cast<HOBJECT>(texture));
     }
 }
@@ -1766,7 +1766,7 @@ void CCharacterComponent::ReplaceHairTexture(int32_t hairStyleID, const char* de
 // VERIFY: 88329d82 manual
 // OFFSET: 0x004EA1F0
 void CCharacterComponent::LoadBaseVariation(COMPONENT_VARIATIONS variation, int32_t textureIndex, int32_t variationIndex, int32_t colorIndex, COMPONENT_SECTIONS section, const char* debug) {
-    void*& texture = this->m_baseVariation[variation].m_texture[textureIndex];
+    HTEXTURECACHE& texture = this->m_baseVariation[variation].m_texture[textureIndex];
 
     if (texture) {
         TextureCacheDestroyTexture(texture);
@@ -2052,7 +2052,7 @@ void CCharacterComponent::AddLink(CM2Model* parent, GEOCOMPONENTLINKS link, cons
         return;
     }
 
-    model->ReplaceTexture(2, texture);
+    model->ReplaceTexture(M2TEX_OBJECT_SKIN, texture);
     HandleClose(reinterpret_cast<HOBJECT>(texture));
 
     if (itemVisual > 0) {
@@ -2113,7 +2113,7 @@ CM2Model* CCharacterComponent::MakeAmmoModel(CM2Model* model, const ItemDisplayI
         return nullptr;
     }
 
-    ammoModel->ReplaceTexture(2, texture);
+    ammoModel->ReplaceTexture(M2TEX_OBJECT_SKIN, texture);
     HandleClose(reinterpret_cast<HOBJECT>(texture));
     CCharacterComponent::ComponentUtilAddItemVisual(ammoModel, displayRec->m_itemVisual);
 
@@ -2887,7 +2887,7 @@ void CCharacterComponent::TurnOffGuildTabardPurchase() {
 
 // VERIFY: 5f4d62d3 manual
 // OFFSET: 0x004EC550
-void CCharacterComponent::Paste(void* texture, MipBits* dstMips, const C2iVector& dstPos, const C2iVector& srcPos, const C2iVector& srcSize, TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel) {
+void CCharacterComponent::Paste(HTEXTURECACHE texture, MipBits* dstMips, const C2iVector& dstPos, const C2iVector& srcPos, const C2iVector& srcSize, TCTEXTUREINFO& srcInfo, uint32_t srcMipLevel) {
     C2iVector pos = dstPos;
     C2iVector src = srcPos;
     C2iVector size = srcSize;
@@ -2920,7 +2920,7 @@ void CCharacterComponent::Paste(void* texture, MipBits* dstMips, const C2iVector
 
 // VERIFY: 4a30e6aa manual
 // OFFSET: 0x004EC690
-void CCharacterComponent::PasteTransparent1BitScale(void* texture, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo) {
+void CCharacterComponent::PasteTransparent1BitScale(HTEXTURECACHE texture, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo) {
     uint32_t srcRowPitch = srcInfo.m_width;
     uint32_t copyWidth = srcSize.x;
     uint32_t copyHeight = srcSize.y;
@@ -3055,7 +3055,7 @@ void CCharacterComponent::PasteTransparent1BitScale(void* texture, MipBits* dstM
 
 // VERIFY: 3cc4e3c5 manual
 // OFFSET: 0x004ECC20
-void CCharacterComponent::PasteTransparent4BitScale(void* texture, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo) {
+void CCharacterComponent::PasteTransparent4BitScale(HTEXTURECACHE texture, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo) {
     uint32_t srcRowPitch = srcInfo.m_width;
     uint32_t copyWidth = srcSize.x;
     uint32_t copyHeight = srcSize.y;
@@ -3206,7 +3206,7 @@ void CCharacterComponent::PasteTransparent4BitScale(void* texture, MipBits* dstM
 
 // VERIFY: 523c6ae3 manual
 // OFFSET: 0x004ED200
-void CCharacterComponent::PasteTransparent8BitScale(void* texture, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo) {
+void CCharacterComponent::PasteTransparent8BitScale(HTEXTURECACHE texture, MipBits* dstMips, C2iVector& dstPos, uint32_t dstStride, C2iVector& srcPos, C2iVector& srcSize, TCTEXTUREINFO& srcInfo) {
     uint32_t srcRowPitch = srcInfo.m_width;
     uint32_t copyWidth = srcSize.x;
     uint32_t copyHeight = srcSize.y;
@@ -4098,7 +4098,7 @@ void CCharacterComponent::SetShieldItemDisplay(int32_t displayID) {
 
 // VERIFY: e411dd8f manual
 // OFFSET: 0x004EF9D0
-void CCharacterComponent::PasteScale(void* texture, MipBits* dstMips, const C2iVector& dstPos, const C2iVector& srcPos, const C2iVector& srcSize, TCTEXTUREINFO& srcInfo) {
+void CCharacterComponent::PasteScale(HTEXTURECACHE texture, MipBits* dstMips, const C2iVector& dstPos, const C2iVector& srcPos, const C2iVector& srcSize, TCTEXTUREINFO& srcInfo) {
     C2iVector pos = dstPos;
     C2iVector src = srcPos;
     C2iVector size = srcSize;
@@ -4180,7 +4180,7 @@ inline CharacterSection::~CharacterSection() {
 
 // INLINED
 inline CharacterBaseVariation::~CharacterBaseVariation() {
-    void** texture = this->m_texture;
+    HTEXTURECACHE* texture = this->m_texture;
 
     for (int32_t i = 0; i < 7; i++) {
         if (texture[i]) {
@@ -4316,7 +4316,7 @@ void CCharacterComponent::CreateBaseTexture() {
     }
 
     this->m_baseSkinTexture = TextureCreate(s_textureSize, s_textureSize, this->m_gxTexFormat, dataFormat, flags, this, &CCharacterComponent::UpdateBaseTexture, "CharacterBaseSkin", 1);
-    this->m_data.m_model->ReplaceTexture(1, this->m_baseSkinTexture);
+    this->m_data.m_model->ReplaceTexture(M2TEX_SKIN, this->m_baseSkinTexture);
 }
 
 // VERIFY: 51c5a21d manual
@@ -4675,7 +4675,7 @@ bool CCharacterComponent::SetPrevHairStyle(COMPONENT_CONTEXT context) {
 
 // VERIFY: f3be180c auto
 // OFFSET: 0x004F07D0
-void CCharacterComponent::PasteFromSkin(COMPONENT_SECTIONS section, void* texture, MipBits* dstMips) {
+void CCharacterComponent::PasteFromSkin(COMPONENT_SECTIONS section, HTEXTURECACHE texture, MipBits* dstMips) {
     if (!TextureCacheHasMips(texture)) {
         return;
     }
@@ -4707,7 +4707,7 @@ void CCharacterComponent::PasteFromSkin(COMPONENT_SECTIONS section, void* textur
 
 // VERIFY: c9c0de88 auto
 // OFFSET: 0x004F08A0
-void CCharacterComponent::PasteToSection(COMPONENT_SECTIONS section, void* texture, MipBits* dstMips) {
+void CCharacterComponent::PasteToSection(COMPONENT_SECTIONS section, HTEXTURECACHE texture, MipBits* dstMips) {
     if (!TextureCacheHasMips(texture)) {
         return;
     }
@@ -5380,7 +5380,7 @@ bool CCharacterComponent::SkinNpc(const char* debug) {
         return false;
     }
 
-    this->m_data.m_model->ReplaceTexture(1, texture);
+    this->m_data.m_model->ReplaceTexture(M2TEX_SKIN, texture);
     HandleClose(reinterpret_cast<HOBJECT>(texture));
     this->ReplaceExtraSkinTexture(debug);
     this->m_data.m_flags |= 0x1;
@@ -5412,7 +5412,7 @@ void CCharacterComponent::ReplaceMonsterSkin(CM2Model* model, const CreatureDisp
             CTexture* texture = TextureCreate(path, flags, &status, 0);
 
             if (texture) {
-                model->ReplaceTexture(i + 11, texture);
+                model->ReplaceTexture(i + M2TEX_MONSTER_1, texture);
                 HandleClose(reinterpret_cast<HOBJECT>(texture));
             }
         }
@@ -5443,7 +5443,7 @@ void CCharacterComponent::AddCape() {
     CTexture* texture = CreateTexture(s_path, &status);
 
     if (texture) {
-        this->m_data.m_model->ReplaceTexture(2, texture);
+        this->m_data.m_model->ReplaceTexture(M2TEX_OBJECT_SKIN, texture);
         HandleClose(reinterpret_cast<HOBJECT>(texture));
     }
 }

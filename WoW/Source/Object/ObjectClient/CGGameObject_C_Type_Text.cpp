@@ -1,4 +1,5 @@
 #include "CGGameObject_C_Type_Text.h"
+#include "WoW/Source/UIUtil/Types.h"
 #include "WoW/Source/Ui/ItemTextFrame.h"
 
 // VERIFY: ec789ebc auto
@@ -22,7 +23,7 @@ void CGGameObject_C_Type_Text::StartInteraction() {
 // VERIFY: 829ac8b8 auto
 // OFFSET: 0x0070B540
 int32_t CGGameObject_C_Type_Text::CanChangeCursor() const {
-    return this->CanUseNow(nullptr, nullptr, nullptr) ? 7 : 33;
+    return this->CanUseNow(nullptr, nullptr, nullptr) ? INSPECT_CURSOR : INSPECT_ERROR_CURSOR;
 }
 
 // VERIFY: 990b081a auto

@@ -1,4 +1,5 @@
 #include "MapChunk.h"
+#include "WoW/Source/WorldClient/WorldConstants.h"
 #include "WoW/Source/WorldClient/DetailDoodad.h"
 #include "WoW/Source/WorldClient/CDetailDoodadData.h"
 #include "Engine/Source/Tempest/CRandom.h"
@@ -246,18 +247,18 @@ void CMapChunk::InitializeVertexGrid() {
     C3Vector* vertex = CMapChunk::vertexList;
 
     for (int32_t row = 0; row < 9; row++) {
-        float x = row * -4.1666665f;
+        float x = row * -SMOLTILE_SIZE;
 
         for (int32_t col = 0; col < 9; col++) {
             vertex->x = x;
-            vertex->y = 0.0f - col * 4.1666665f;
+            vertex->y = 0.0f - col * SMOLTILE_SIZE;
             vertex++;
         }
 
         if (row < 8) {
             for (int32_t col = 0; col < 8; col++) {
                 vertex->x = x - 2.0833333f;
-                vertex->y = 0.0f - col * 4.1666665f - 2.0833333f;
+                vertex->y = 0.0f - col * SMOLTILE_SIZE - 2.0833333f;
                 vertex++;
             }
         }
@@ -357,14 +358,14 @@ void CMapChunk::CreateVerticesWorld(CGxVertexPN* v, const C3Vector& offset) {
     float top = 17066.666f - this->m_cOffset.y * 33.333332f;
     rows[0] = top;
     cols[0] = left;
-    rows[1] = top - 4.1666665f;
+    rows[1] = top - SMOLTILE_SIZE;
     rows[2] = top - 8.333333f;
     rows[3] = top - 12.5f;
     rows[4] = top - 16.666666f;
     rows[5] = top - 20.833332f;
     rows[6] = top - 25.0f;
     rows[7] = top - 29.166666f;
-    cols[1] = left - 4.1666665f;
+    cols[1] = left - SMOLTILE_SIZE;
     cols[2] = left - 8.333333f;
     cols[3] = left - 12.5f;
     cols[4] = left - 16.666666f;
@@ -418,14 +419,14 @@ void CMapChunk::CreateVerticesWorld(CGxVertexPNC* v, const C3Vector& offset) {
     float top = 17066.666f - this->m_cOffset.y * 33.333332f;
     rows[0] = top;
     cols[0] = left;
-    rows[1] = top - 4.1666665f;
+    rows[1] = top - SMOLTILE_SIZE;
     rows[2] = top - 8.333333f;
     rows[3] = top - 12.5f;
     rows[4] = top - 16.666666f;
     rows[5] = top - 20.833332f;
     rows[6] = top - 25.0f;
     rows[7] = top - 29.166666f;
-    cols[1] = left - 4.1666665f;
+    cols[1] = left - SMOLTILE_SIZE;
     cols[2] = left - 8.333333f;
     cols[3] = left - 12.5f;
     cols[4] = left - 16.666666f;
@@ -1163,8 +1164,8 @@ void CMapChunk::CreateDetailDoodads() {
             shadeCenter = shadeCorner + 9 * sizeof(uint32_t);
         }
 
-        float offsetX = y * -4.1666665f;
-        float offsetY = x * -4.1666665f;
+        float offsetX = y * -SMOLTILE_SIZE;
+        float offsetY = x * -SMOLTILE_SIZE;
 
         verts[0] = C3Vector(CMap::s_subchunkCoords[4].x + offsetX, CMap::s_subchunkCoords[4].y + offsetY, CMap::s_subchunkCoords[4].z);
         verts[0].z = height[9];
@@ -1250,8 +1251,8 @@ void CMapChunk::CreateDetailDoodads() {
         }
 
         uint32_t cellBase = 4 * (x + 8 * y);
-        float cellX = x * 4.1666665f;
-        float cellY = y * 4.1666665f;
+        float cellX = x * SMOLTILE_SIZE;
+        float cellY = y * SMOLTILE_SIZE;
 
         for (uint32_t j = 0; j < count; j++) {
             float u = CRandom::sfloat_(seed);
@@ -1275,7 +1276,7 @@ void CMapChunk::CreateDetailDoodads() {
                 tri = 1;
             }
 
-            if (px - 4.1666665f - -py > 0.0f) {
+            if (px - SMOLTILE_SIZE - -py > 0.0f) {
                 tri += 2;
             }
 
