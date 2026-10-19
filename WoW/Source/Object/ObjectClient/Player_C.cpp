@@ -11481,7 +11481,7 @@ void CGPlayer_C::SaveTabard(int32_t emblemStyle, int32_t emblemColor, int32_t bo
 bool CGPlayer_C::LoadGuildTextures(int32_t displayId) {
     ItemDisplayInfoRec rec;
 
-    if (!this->m_characterComponent || !g_itemDisplayInfoDB.GetRecordByIndex(displayId, &rec) || (this->m_characterComponent->m_flags & 0x40)) {
+    if (!this->m_characterComponent || !g_itemDisplayInfoDB.GetRecord(displayId, &rec) || (this->m_characterComponent->m_flags & 0x40)) {
         return false;
     }
 
