@@ -106,6 +106,17 @@ compilando e com o mesmo comportamento.
 
 **Objetivo:** gerar `World of Warcraft.app` arm64 que linka, mesmo que pare no primeiro `TODO_MAC()`.
 
+**Status (2026-10-22): concluído.** `cmake -G Ninja` + `ninja` gera `bin/Mac/World of Warcraft.app` (build limpo
+em ~1min20s); o `check-clang.sh` passa 1114/1114 (o E1 também está fechado com o sse2neon). Ao abrir, o app
+registra os primeiros `TODO_MAC()` (SCritSect, RMutex, Time, Thread, SLog, Storm...) e fica em
+`Blizzard::Process::Sleep`, porque `Atomic::Increment` ainda é stub. Diferenças em relação ao plano:
+- a filtragem de pastas por plataforma é feita uma vez no `CMakeLists.txt` raiz, não em cada módulo;
+- os stubs vêm de `port-mac/tools/gen-mac-stubs.py` e não têm a tag `OFFSET:` (usam `// Win64: 0x...`);
+- o FMOD já tem a camada de SO POSIX de verdade (só a saída CoreAudio fica para o E6);
+- o xvidcore não tem código-fonte no repositório (só a `.lib` x64), então os filmes ficam para o E7 e o
+  DivxDecoder do Mac falha de propósito;
+- o build Windows não foi testado depois das mudanças no CMake: falta a CI.
+
 - [ ] CMake (doc 02):
   - [ ] trocar o `FATAL_ERROR` por `WOWDECOMP_PLATFORM_MAC`;
   - [ ] `WIN32`/`_WINDOWS` só no Windows;
