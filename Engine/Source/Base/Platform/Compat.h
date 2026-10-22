@@ -71,8 +71,20 @@ static inline char* _strlwr(char* string) {
     return string;
 }
 
+// The Windows CRT takes '\\' as a path separator; the game passes paths like "Screenshots\\x.jpg" straight to fopen.
+static inline FILE* WowCompatFopen(const char* filename, const char* mode) {
+    char path[1024];
+    size_t i = 0;
+    for (; filename[i] && i < sizeof(path) - 1; i++) {
+        path[i] = filename[i] == '\\' ? '/' : filename[i];
+    }
+    path[i] = '\0';
+    return (fopen)(path, mode);
+}
+#define fopen WowCompatFopen
+
 static inline int fopen_s(FILE** stream, const char* filename, const char* mode) {
-    *stream = fopen(filename, mode);
+    *stream = WowCompatFopen(filename, mode);
     return *stream ? 0 : errno;
 }
 

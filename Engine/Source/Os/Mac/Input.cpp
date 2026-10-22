@@ -14,7 +14,9 @@
 #include <Carbon/Carbon.h>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
+#include "Engine/Source/Base/Platform/Mac/MacSync.h"
 #include "Engine/Source/Base/Platform/WinTypes.h"
 #include "Engine/Source/Event/Types.h"
 #include "Engine/Source/Os/Gui.h"
@@ -518,7 +520,26 @@ static void CenterMouse() {
 }
 
 // Win64: 0x00869E00
+// Debugging aid for headless runs: WOWDECOMP_MAC_SCREENSHOT=<seconds> presses Print Screen once after that many
+// seconds, so the game writes Screenshots/ from the GL back buffer without needing screen-recording permission.
+static void MacDebugScreenshot() {
+    static uint32_t s_screenshotAt = 0xFFFFFFFF;
+
+    if (s_screenshotAt == 0xFFFFFFFF) {
+        const char* seconds = std::getenv("WOWDECOMP_MAC_SCREENSHOT");
+        s_screenshotAt = seconds ? MacTickCount() + static_cast<uint32_t>(std::atoi(seconds)) * 1000 : 0;
+    }
+
+    if (s_screenshotAt && MacTickCount() >= s_screenshotAt) {
+        s_screenshotAt = 0;
+        OsQueuePut(OS_INPUT_KEY_DOWN, KEY_PRINTSCREEN, 1, 0, 0);
+        OsQueuePut(OS_INPUT_KEY_UP, KEY_PRINTSCREEN, 1, 0, 0);
+    }
+}
+
 int32_t OsInputGet(OSINPUT* id, int32_t* param0, int32_t* param1, int32_t* param2, int32_t* param3) {
+    MacDebugScreenshot();
+
     *id = static_cast<OSINPUT>(-1);
 
     if (s_windowSize && !MacGameWindowIsMinimized()) {
