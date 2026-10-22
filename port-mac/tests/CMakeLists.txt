@@ -10,7 +10,8 @@ target_link_libraries(DataTest
         "-framework Cocoa" "-framework Security" "-framework IOKit"
 )
 
-# for Os/Mac's game window until it exists (its functions are weak, so the real ones win).
+# Stage E4 test: the Mac OpenGL Gx device in the Os/Mac game window (needs a display; not run by CI).
+add_executable(GxTest GxTest.mm)
 
 target_link_libraries(GxTest
     PRIVATE
