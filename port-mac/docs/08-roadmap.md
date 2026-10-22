@@ -63,12 +63,13 @@ E0 Ambiente ──► E1 Limpeza clang ──► E2 Build + stubs ──► E3 F
 
 **Objetivo:** o código comum compila no Apple clang arm64 **sem mudar nada no Windows**.
 
-**Status (2026-10-22):** 1035 de 1043 arquivos passam no `check-clang.sh` (linha de base: 161 de 1046).
-Faltam 8 arquivos:
-- 5 usam SSE (`M2Model`, `M2Scene`, `CharacterComponent`, `SpiritFrame`, `SpiritPitch`) e ficam para o
-  sse2neon do E2;
-- `BSNEncodeInterface.cpp` (casts que removem `const`) e `Player_C.cpp:682` (ponteiro → `uint32_t`) precisam
-  mudar o corpo de funções com selo `// VERIFY:`.
+**Status (2026-10-22):** 1037 de 1042 arquivos passam no `check-clang.sh` (linha de base: 161 de 1046).
+Os 5 que faltam usam SSE (`M2Model`, `M2Scene`, `CharacterComponent`, `SpiritFrame`, `SpiritPitch`) e ficam
+para o sse2neon do E2.
+- `Player_C.cpp:682` (ponteiro → `uint32_t`) foi corrigido no corpo de `GuildUpdateHandler`; o selo
+  `VERIFY` dessa função precisa ser refeito.
+- `BSNEncodeInterface.cpp` (só Battle.net) saiu do build Mac em vez de mudar ~30 corpos com selo `VERIFY`. O
+  que linkar com ele vira stub no E2.
 
 Decisões tomadas nesta etapa:
 - `raw_name` virou `#define raw_name name` no `Compat.h`, sem macro nova nos ~120 pontos de uso.

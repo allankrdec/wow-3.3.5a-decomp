@@ -3,3 +3,5 @@
 ^Engine/Source/Storm/Source/Storm\.cpp$
 ^Engine/Source/Storm/Source/DebugLog\.cpp$
 ^WoW/Source/Ui/UILCD/LCD\.cpp$
+# Battle.net only (out of scope on Mac); its casts would need edits to VERIFY-stamped bodies. E2 stubs what links to it.
+^WoW/Source/Battlenet/BSN/BSNEncodeInterface\.cpp$
