@@ -6,6 +6,7 @@
 
 #import <Cocoa/Cocoa.h>
 #include <cfenv>
+#include <cstdlib>
 #include "Engine/Source/Storm/H/storm.h"
 #include "WoW/Source/Client.h"
 
@@ -14,7 +15,13 @@ int main() {
 
     @autoreleasepool {
         [NSApplication sharedApplication];
-        [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+        // WOWDECOMP_MAC_BACKGROUND=1 (automated runs): no Dock icon, never takes focus, no App Nap throttling.
+        if (std::getenv("WOWDECOMP_MAC_BACKGROUND")) {
+            [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
+            [[[NSProcessInfo processInfo] beginActivityWithOptions:NSActivityUserInitiatedAllowingIdleSystemSleep reason:@"wowdecomp background run"] retain];
+        } else {
+            [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+        }
         [NSApp finishLaunching];
     }
 

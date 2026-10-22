@@ -5,6 +5,7 @@
 #define GL_SILENCE_DEPRECATION 1
 
 #import <Cocoa/Cocoa.h>
+#include <cstdlib>
 #include <Carbon/Carbon.h>
 #include <cmath>
 #include "Engine/Source/Os/Mac/MacInput.h"
@@ -361,6 +362,16 @@ static void ViewPoint(NSView* view, NSPoint pointInWindow, int32_t* x, int32_t* 
 
 @end
 
+// Debugging aid: WOWDECOMP_MAC_BACKGROUND=1 keeps the game window behind the other windows and never activates the
+// app, for automated runs on a machine someone is using.
+static bool BackgroundMode() {
+    static int32_t s_background = -1;
+    if (s_background < 0) {
+        s_background = std::getenv("WOWDECOMP_MAC_BACKGROUND") ? 1 : 0;
+    }
+    return s_background;
+}
+
 static void ApplyMode(int32_t width, int32_t height, bool windowed) {
     s_windowed = windowed;
 
@@ -373,7 +384,9 @@ static void ApplyMode(int32_t width, int32_t height, bool windowed) {
         // Borderless window over the whole main screen; the display mode never changes.
         [s_window setStyleMask:NSWindowStyleMaskBorderless];
         [s_window setFrame:[MainScreen() frame] display:YES];
-        [NSApp setPresentationOptions:NSApplicationPresentationHideDock | NSApplicationPresentationHideMenuBar];
+        if (!BackgroundMode()) {
+            [NSApp setPresentationOptions:NSApplicationPresentationHideDock | NSApplicationPresentationHideMenuBar];
+        }
     }
 
     [s_window makeFirstResponder:s_view];
@@ -463,6 +476,11 @@ void MacGameWindowSetMode(int32_t width, int32_t height, bool windowed) {
 
 void MacGameWindowShow() {
     if (!s_window) {
+        return;
+    }
+
+    if (BackgroundMode()) {
+        [s_window orderBack:nil];
         return;
     }
 
