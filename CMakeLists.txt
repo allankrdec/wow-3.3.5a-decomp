@@ -8,13 +8,23 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
     )
 endif ()
 
+# macOS builds are arm64 only (port-mac/docs/07-apple-silicon.md). Must be set before project().
+if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin" AND NOT CMAKE_OSX_ARCHITECTURES)
+    set(CMAKE_OSX_ARCHITECTURES arm64 CACHE STRING "macOS architectures")
+endif ()
+
 project(wowdecomp CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if (NOT CMAKE_SYSTEM_NAME MATCHES "Windows")
-    message(FATAL_ERROR "wowdecomp targets Windows only.")
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+    set(WOWDECOMP_PLATFORM_WIN 1)
+elseif (APPLE)
+    set(WOWDECOMP_PLATFORM_MAC 1)
+    enable_language(OBJCXX)
+else ()
+    message(FATAL_ERROR "wowdecomp targets Windows and macOS.")
 endif ()
 
 # x64 is the target. Win32 stays buildable: it is the configuration whose struct layouts can be
@@ -39,13 +49,37 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-add_compile_definitions(
-    WIN32
-    _WINDOWS
-    NOMINMAX
-    WIN32_LEAN_AND_MEAN
-    _CRT_SECURE_NO_WARNINGS
-)
+if (WOWDECOMP_PLATFORM_WIN)
+    add_compile_definitions(
+        WIN32
+        _WINDOWS
+        NOMINMAX
+        WIN32_LEAN_AND_MEAN
+        _CRT_SECURE_NO_WARNINGS
+    )
+endif ()
+
+if (WOWDECOMP_PLATFORM_MAC)
+    set(CMAKE_OBJCXX_STANDARD 17)
+    set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
+
+    add_compile_definitions(
+        WOWDECOMP_PLATFORM_MAC=1
+        NOMINMAX
+    )
+
+    # Compat.h maps MSVC compiler/CRT spellings; Mac/Include has the CRT headers the macOS SDK lacks.
+    include_directories(BEFORE ${CMAKE_SOURCE_DIR}/Engine/Source/Base/Platform/Mac/Include)
+    add_compile_options(
+        "SHELL:-include ${CMAKE_SOURCE_DIR}/Engine/Source/Base/Platform/Compat.h"
+        # No fused multiply-add: keeps float results close to the x86 builds.
+        -ffp-contract=off
+        # MSVC accepts narrowing conversions in braced initializers and the C code compiled as C++ (jpeg, lua)
+        # still uses 'register'.
+        $<$<COMPILE_LANGUAGE:CXX,OBJCXX>:-Wno-c++11-narrowing>
+        $<$<COMPILE_LANGUAGE:CXX,OBJCXX>:-Wno-register>
+    )
+endif ()
 
 # Off by default: the client checks MPQ file MD5s (signaturefile) and GlueXML/FrameXML/AddOn .toc.sig files like the
 # original. ON accepts unsigned or modified game data and interface files.
@@ -108,12 +142,79 @@ add_subdirectory(WoW/Source)
 if (WIN32)
     add_subdirectory(Tools/WowClient)
 endif ()
-if (WOWDECOMP_ARCH_64)
+if (WOWDECOMP_PLATFORM_WIN AND WOWDECOMP_ARCH_64)
     add_subdirectory(Tools/XvidDecoder)
 endif ()
 
-foreach (target Wow WowClient MapViewer M2Viewer GxTest MpqTest BlpTest DbcTest AssetCheck)
-    if (TARGET ${target})
-        target_sources(${target} PRIVATE ${CMAKE_SOURCE_DIR}/waystone.rc)
+if (WOWDECOMP_PLATFORM_WIN)
+    foreach (target Wow WowClient MapViewer M2Viewer GxTest MpqTest BlpTest DbcTest AssetCheck)
+        if (TARGET ${target})
+            target_sources(${target} PRIVATE ${CMAKE_SOURCE_DIR}/waystone.rc)
+        endif ()
+    endforeach ()
+endif ()
+
+# Platform folders: the modules glob every .cpp, so each platform drops the other platforms' folders here.
+# Windows keeps Win32/ and Win64/ (their files are guarded by WOWDECOMP_ARCH_*) and drops Mac/. macOS drops
+# Win32/, Win64/ and Windows/, plus the Windows-only files of common folders listed in
+# port-mac/tools/mac-excluded.txt, and adds the Objective-C++ (.mm) files of its Mac/ folders.
+function(wowdecomp_collect_targets dir out)
+    get_property(targets DIRECTORY ${dir} PROPERTY BUILDSYSTEM_TARGETS)
+    get_property(subdirs DIRECTORY ${dir} PROPERTY SUBDIRECTORIES)
+    foreach (subdir ${subdirs})
+        wowdecomp_collect_targets(${subdir} subtargets)
+        list(APPEND targets ${subtargets})
+    endforeach ()
+    set(${out} ${targets} PARENT_SCOPE)
+endfunction ()
+
+if (WOWDECOMP_PLATFORM_MAC)
+    file(STRINGS ${CMAKE_SOURCE_DIR}/port-mac/tools/mac-excluded.txt WOWDECOMP_MAC_EXCLUDED REGEX "^[^#]")
+endif ()
+
+wowdecomp_collect_targets(${CMAKE_SOURCE_DIR} WOWDECOMP_TARGETS)
+foreach (target ${WOWDECOMP_TARGETS})
+    get_target_property(type ${target} TYPE)
+    if (type STREQUAL "INTERFACE_LIBRARY" OR type STREQUAL "UTILITY" OR target STREQUAL "fmodex")
+        continue ()
     endif ()
+
+    get_target_property(sources ${target} SOURCES)
+    get_target_property(source_dir ${target} SOURCE_DIR)
+    set(kept)
+    foreach (source ${sources})
+        if (IS_ABSOLUTE ${source})
+            set(path ${source})
+        else ()
+            set(path ${source_dir}/${source})
+        endif ()
+        file(RELATIVE_PATH relative ${CMAKE_SOURCE_DIR} ${path})
+
+        if (WOWDECOMP_PLATFORM_WIN AND relative MATCHES "/Mac/")
+            continue ()
+        endif ()
+        if (WOWDECOMP_PLATFORM_MAC)
+            if (relative MATCHES "/(Win32|Win64|Windows)/")
+                continue ()
+            endif ()
+            set(excluded FALSE)
+            foreach (pattern ${WOWDECOMP_MAC_EXCLUDED})
+                if (relative MATCHES "${pattern}")
+                    set(excluded TRUE)
+                endif ()
+            endforeach ()
+            if (excluded)
+                continue ()
+            endif ()
+        endif ()
+        list(APPEND kept ${source})
+    endforeach ()
+
+    if (WOWDECOMP_PLATFORM_MAC AND NOT target STREQUAL "Wow")
+        file(GLOB_RECURSE objcxx_sources CONFIGURE_DEPENDS "${source_dir}/*.mm")
+        list(FILTER objcxx_sources INCLUDE REGEX "/Mac/")
+        list(APPEND kept ${objcxx_sources})
+    endif ()
+
+    set_property(TARGET ${target} PROPERTY SOURCES ${kept})
 endforeach ()
