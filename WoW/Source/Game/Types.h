@@ -3,7 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <windows.h>
+#include "Engine/Source/Base/Platform/WinTypes.h"
 
 enum VALIDATE_NAME_RESULT : int32_t {
     NAME_SUCCESS = 0,

@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include "WoW/Source/Game/Types.h"
-#include <windows.h>
+#include "Engine/Source/Base/Platform/WinTypes.h"
 #include "Engine/Source/Event/Types.h"
 #include "Engine/Source/Os/OsFile.h"
 #include "Engine/Source/Storm/H/stpl.h"

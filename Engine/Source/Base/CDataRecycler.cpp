@@ -1,5 +1,5 @@
 #include <cstdint>
-#include <windows.h>
+#include "Engine/Source/Base/Platform/WinTypes.h"
 #include "Engine/Source/Base/CDataRecycler.h"
 #include "Engine/Source/Storm/H/storm.h"
 

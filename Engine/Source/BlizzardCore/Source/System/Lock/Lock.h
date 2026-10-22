@@ -3,7 +3,7 @@
 
 #include <cstdint>
 #include <new>
-#include <windows.h>
+#include "Engine/Source/Base/Platform/WinTypes.h"
 #include "Engine/Source/BlizzardCore/Source/System/Process/Process.h"
 
 namespace Blizzard {
