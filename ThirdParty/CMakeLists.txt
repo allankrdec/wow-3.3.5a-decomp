@@ -178,6 +178,11 @@ elseif (WIN32)
         INTERFACE
             XvidDecoder
     )
+else ()
+    target_sources(DivxDecoder
+        INTERFACE
+            ${CMAKE_CURRENT_SOURCE_DIR}/DivxDecoder/mac/DivxDecoder.cpp
+    )
 endif ()
 
 if (WIN32)
