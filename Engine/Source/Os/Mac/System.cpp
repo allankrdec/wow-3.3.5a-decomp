@@ -594,6 +594,12 @@ uint32_t OsGetProcessorFeaturesEx(int32_t& vendor) {
         s_processorVendor = 4;
     }
 
+    // Debugging aid: WOWDECOMP_MAC_NOSIMD=1 hides MMX/SSE/SSE2 so the game takes its scalar paths instead of the
+    // SSE code that sse2neon maps to NEON.
+    if (std::getenv("WOWDECOMP_MAC_NOSIMD")) {
+        features &= ~(2u | 4u | 0x10u);
+    }
+
     s_processorFeatures = features | 0x80000000;
 
     IOsSystemCpuLog(&info);
