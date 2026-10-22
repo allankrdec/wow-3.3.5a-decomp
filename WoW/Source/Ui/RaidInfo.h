@@ -76,7 +76,6 @@ class CGRaidInfo {
     static void GetMapNameWithDifficulty(char* buffer, uint32_t size, int32_t mapId, int32_t difficulty);
 };
 
-int32_t Script_DoReadyCheck(lua_State* L);
 void RaidInfoRegisterScriptFunctions();
 void RaidInfoUnregisterScriptFunctions();
 

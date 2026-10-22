@@ -21,7 +21,6 @@ class CGContainerInfo {
     static bool GetLuaBagAndSlot(lua_State* L, CGBag_C** bag, int32_t* slot, int32_t* bank);
 };
 
-int32_t Script_PickupContainerItem(lua_State* L);
 void ContainerRegisterScriptFunctions();
 void ContainerUnregisterScriptFunctions();
 

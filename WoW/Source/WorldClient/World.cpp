@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <new>
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 #include "Engine/Source/BlizzardCore/SFile2-Core.h"
 #include "Engine/Source/BlizzardCore/Source/Packages/Streaming/Streaming.h"
