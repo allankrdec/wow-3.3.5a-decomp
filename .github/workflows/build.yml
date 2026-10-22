@@ -9,6 +9,9 @@ jobs:
   windows:
     name: Windows ${{ matrix.arch }}
     runs-on: windows-2022
+    # Win32 also fails on an unmodified upstream main in this runner (checked 2026-10-22); keep it informative
+    # until that is investigated.
+    continue-on-error: ${{ matrix.arch == 'Win32' }}
     strategy:
       fail-fast: false
       matrix:
