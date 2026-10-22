@@ -16,7 +16,8 @@
 #include <stdint.h>
 
 typedef void* HANDLE;
-typedef void* HWND;
+typedef struct HWND__* HWND;
+typedef struct HINSTANCE__* HINSTANCE;
 typedef uint32_t DWORD;
 
 // Recursive mutex; created and destroyed by the platform Lock/SCritSect code.
@@ -45,6 +46,14 @@ union LARGE_INTEGER {
     };
     int64_t QuadPart;
 };
+
+// Crash-report structures; only the Windows crash handler (MachineState) looks inside them.
+struct _CONTEXT;
+typedef struct _CONTEXT CONTEXT;
+struct _EXCEPTION_POINTERS;
+typedef struct _EXCEPTION_POINTERS EXCEPTION_POINTERS;
+struct _SYSTEMTIME;
+typedef struct _SYSTEMTIME SYSTEMTIME;
 
 // Win32 functions that the common code still calls directly; each platform's Mac/ code implements them.
 uint32_t GetACP();
