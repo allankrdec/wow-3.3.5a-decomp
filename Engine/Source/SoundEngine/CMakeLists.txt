@@ -10,7 +10,11 @@ if (WOWDECOMP_PLATFORM_MAC)
     set(FMODEX_PLATFORM_GLOBS "${FMODEX_PLATFORM_DIR}/src/*.cpp")
 else ()
     set(FMODEX_PLATFORM_DIR ${FMODEX_DIR}/win32)
-    set(FMODEX_PLATFORM_GLOBS "${FMODEX_PLATFORM_DIR}/src/*.cpp" "${FMODEX_PLATFORM_DIR}/src/asio/*.cpp")
+    set(FMODEX_PLATFORM_GLOBS
+        "${FMODEX_PLATFORM_DIR}/src/*.cpp"
+        "${FMODEX_PLATFORM_DIR}/src/asio/*.cpp"
+        "${FMODEX_DIR}/lib/openal/utils/*.cpp"
+    )
 endif ()
 
 file(GLOB FMODEX_SOURCES CONFIGURE_DEPENDS
@@ -19,7 +23,6 @@ file(GLOB FMODEX_SOURCES CONFIGURE_DEPENDS
     "${FMODEX_DIR}/lib/ogg_vorbis/ogg/src/*.c"
     "${FMODEX_DIR}/lib/ogg_vorbis/vorbis/lib/*.c"
     "${FMODEX_FLAC_DIR}/src/libFLAC/*.c"
-    "${FMODEX_DIR}/lib/openal/utils/*.cpp"
     "${FMODEX_DIR}/lib/freeverb/*.cpp"
     "${FMODEX_DIR}/lib/sfx/foreverb/*.cpp"
 )

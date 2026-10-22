@@ -399,6 +399,16 @@
         #undef FMOD_SUPPORT_WASAPI
     #endif
 
+#elif defined(PLATFORM_MAC)
+
+    /* wowdecomp macOS port: CoreAudio output lives in mac/src. No CD audio, Windows Media or AAC/CELT. */
+    #define FMOD_SUPPORT_PRAGMAPACK
+
+    #undef FMOD_SUPPORT_ASF
+    #undef FMOD_SUPPORT_CDDA
+    #undef FMOD_SUPPORT_MYEARS
+    #undef FMOD_SUPPORT_CELT
+
 #elif defined(PLATFORM_LINUX64)
 
     #define FMOD_SUPPORT_OSS
