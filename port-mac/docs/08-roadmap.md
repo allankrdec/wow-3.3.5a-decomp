@@ -63,6 +63,21 @@ E0 Ambiente ──► E1 Limpeza clang ──► E2 Build + stubs ──► E3 F
 
 **Objetivo:** o código comum compila no Apple clang arm64 **sem mudar nada no Windows**.
 
+**Status (2026-10-22):** 1035 de 1043 arquivos passam no `check-clang.sh` (linha de base: 161 de 1046).
+Faltam 8 arquivos:
+- 5 usam SSE (`M2Model`, `M2Scene`, `CharacterComponent`, `SpiritFrame`, `SpiritPitch`) e ficam para o
+  sse2neon do E2;
+- `BSNEncodeInterface.cpp` (casts que removem `const`) e `Player_C.cpp:682` (ponteiro → `uint32_t`) precisam
+  mudar o corpo de funções com selo `// VERIFY:`.
+
+Decisões tomadas nesta etapa:
+- `raw_name` virou `#define raw_name name` no `Compat.h`, sem macro nova nos ~120 pontos de uso.
+- `Platform/WinTypes.h` substitui o `#include <windows.h>` do código comum. No Windows ele inclui o
+  `windows.h`; no Mac define só os tipos opacos.
+- CRT que falta no SDK do macOS (`malloc.h`, `mbstring.h`, `winerror.h`) fica em
+  `Base/Platform/Mac/Include`.
+- Arquivos só do Windows em pastas comuns vão para `port-mac/tools/mac-excluded.txt`.
+
 - [ ] `Engine/Source/Base/Platform/Compat.h` (doc 02):
   - convenções de chamada vazias;
   - `__forceinline` e `__int64`;
