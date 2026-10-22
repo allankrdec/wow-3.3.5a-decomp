@@ -16,9 +16,12 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <string>
+#include <vector>
 #include "Engine/Source/Base/Platform/Mac/MacSync.h"
 #include "Engine/Source/Base/Platform/WinTypes.h"
 #include "Engine/Source/Event/Types.h"
+#include "Engine/Source/FrameScript/FrameScript.h"
 #include "Engine/Source/Os/Gui.h"
 #include "Engine/Source/Os/Input.h"
 #include "Engine/Source/Os/Joystick.h"
@@ -520,25 +523,67 @@ static void CenterMouse() {
 }
 
 // Win64: 0x00869E00
-// Debugging aid for headless runs: WOWDECOMP_MAC_SCREENSHOT=<seconds> presses Print Screen once after that many
-// seconds, so the game writes Screenshots/ from the GL back buffer without needing screen-recording permission.
-static void MacDebugScreenshot() {
-    static uint32_t s_screenshotAt = 0xFFFFFFFF;
+// Debugging aids for headless runs (all times in seconds after the first OsInputGet):
+//   WOWDECOMP_MAC_SCREENSHOT=20,45     presses Print Screen at each time, so the game writes Screenshots/ from the
+//                                     GL back buffer without needing screen-recording permission.
+//   WOWDECOMP_MAC_LUA='20:code||40:code' runs each Lua chunk in the current UI (glue or game) at its time.
+struct MacDebugAction {
+    uint32_t m_at;
+    bool m_screenshot;
+    std::string m_lua;
+};
 
-    if (s_screenshotAt == 0xFFFFFFFF) {
-        const char* seconds = std::getenv("WOWDECOMP_MAC_SCREENSHOT");
-        s_screenshotAt = seconds ? MacTickCount() + static_cast<uint32_t>(std::atoi(seconds)) * 1000 : 0;
+static std::vector<MacDebugAction> s_debugActions;
+
+static void MacDebugActions() {
+    static bool s_parsed;
+
+    if (!s_parsed) {
+        s_parsed = true;
+        uint32_t now = MacTickCount();
+
+        if (const char* times = std::getenv("WOWDECOMP_MAC_SCREENSHOT")) {
+            for (const char* t = times; *t; t = std::strchr(t, ',') ? std::strchr(t, ',') + 1 : t + std::strlen(t)) {
+                s_debugActions.push_back({ now + static_cast<uint32_t>(std::atoi(t)) * 1000, true, std::string() });
+            }
+        }
+
+        if (const char* scripts = std::getenv("WOWDECOMP_MAC_LUA")) {
+            std::string all(scripts);
+            for (size_t pos = 0; pos < all.size();) {
+                size_t next = all.find("||", pos);
+                std::string entry = all.substr(pos, next == std::string::npos ? std::string::npos : next - pos);
+                size_t colon = entry.find(':');
+                if (colon != std::string::npos) {
+                    s_debugActions.push_back({ now + static_cast<uint32_t>(std::atoi(entry.c_str())) * 1000, false, entry.substr(colon + 1) });
+                }
+                pos = next == std::string::npos ? all.size() : next + 2;
+            }
+        }
     }
 
-    if (s_screenshotAt && MacTickCount() >= s_screenshotAt) {
-        s_screenshotAt = 0;
-        OsQueuePut(OS_INPUT_KEY_DOWN, KEY_PRINTSCREEN, 1, 0, 0);
-        OsQueuePut(OS_INPUT_KEY_UP, KEY_PRINTSCREEN, 1, 0, 0);
+    uint32_t now = MacTickCount();
+
+    for (size_t i = 0; i < s_debugActions.size();) {
+        if (now < s_debugActions[i].m_at) {
+            i++;
+            continue;
+        }
+
+        MacDebugAction action = s_debugActions[i];
+        s_debugActions.erase(s_debugActions.begin() + i);
+
+        if (action.m_screenshot) {
+            OsQueuePut(OS_INPUT_KEY_DOWN, KEY_PRINTSCREEN, 1, 0, 0);
+            OsQueuePut(OS_INPUT_KEY_UP, KEY_PRINTSCREEN, 1, 0, 0);
+        } else {
+            FrameScript_Execute(action.m_lua.c_str(), "WOWDECOMP_MAC_LUA", nullptr);
+        }
     }
 }
 
 int32_t OsInputGet(OSINPUT* id, int32_t* param0, int32_t* param1, int32_t* param2, int32_t* param3) {
-    MacDebugScreenshot();
+    MacDebugActions();
 
     *id = static_cast<OSINPUT>(-1);
 
