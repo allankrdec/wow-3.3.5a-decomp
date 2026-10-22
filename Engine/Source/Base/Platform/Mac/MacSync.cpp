@@ -16,24 +16,31 @@ void MacCriticalSectionInit(CRITICAL_SECTION* section) {
     pthread_mutexattr_t attr;
     pthread_mutexattr_init(&attr);
     pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&section->m_mutex, &attr);
+    section->m_mutex = new pthread_mutex_t;
+    pthread_mutex_init(section->m_mutex, &attr);
     pthread_mutexattr_destroy(&attr);
 }
 
 void MacCriticalSectionDelete(CRITICAL_SECTION* section) {
-    pthread_mutex_destroy(&section->m_mutex);
+    if (!section->m_mutex) {
+        return;
+    }
+
+    pthread_mutex_destroy(section->m_mutex);
+    delete section->m_mutex;
+    section->m_mutex = nullptr;
 }
 
 void MacCriticalSectionEnter(CRITICAL_SECTION* section) {
-    pthread_mutex_lock(&section->m_mutex);
+    pthread_mutex_lock(section->m_mutex);
 }
 
 void MacCriticalSectionLeave(CRITICAL_SECTION* section) {
-    pthread_mutex_unlock(&section->m_mutex);
+    pthread_mutex_unlock(section->m_mutex);
 }
 
 bool MacCriticalSectionTryEnter(CRITICAL_SECTION* section) {
-    return pthread_mutex_trylock(&section->m_mutex) == 0;
+    return pthread_mutex_trylock(section->m_mutex) == 0;
 }
 
 HANDLE MacEventCreate(bool manualReset, bool initialState) {

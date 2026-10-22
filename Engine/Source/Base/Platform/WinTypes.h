@@ -34,9 +34,12 @@ typedef uintptr_t WPARAM;
 typedef intptr_t LPARAM;
 typedef intptr_t LRESULT;
 
-// Recursive mutex; created and destroyed by the platform Lock/SCritSect code.
+// Recursive mutex; created and destroyed by the platform Lock/SCritSect code. It holds a pointer to a separately
+// allocated pthread mutex because some game structures place critical sections at unaligned offsets
+// (#pragma pack(1), e.g. WowConnectionNet::WORKER): x86 tolerates that, but pthread mutexes on arm64 use atomic
+// instructions that fault on unaligned addresses. Plain loads of the unaligned pointer are fine.
 struct CRITICAL_SECTION {
-    pthread_mutex_t m_mutex;
+    pthread_mutex_t* m_mutex;
 };
 
 // Asynchronous I/O request; only the platform File code reads or writes its fields.
