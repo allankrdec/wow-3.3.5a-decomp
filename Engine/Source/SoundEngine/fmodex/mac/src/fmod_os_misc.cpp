@@ -209,12 +209,11 @@ FMOD_RESULT FMOD_OS_Thread_Create(const char *name, THREAD_RETURNTYPE (THREAD_CA
     start->priority = priority;
     snprintf(start->name, sizeof(start->name), "FMOD %s", name ? name : "");
 
+    /* Windows ignores 'stacksize' (CreateThread with 0) and gets the executable's default 1 MB stack; the callers'
+       requests are too small for their real use, and macOS threads default to 512 KB. */
     pthread_attr_t attr;
     pthread_attr_init(&attr);
-    if (stacksize > 0)
-    {
-        pthread_attr_setstacksize(&attr, ((size_t)stacksize + 16383) & ~(size_t)16383);
-    }
+    pthread_attr_setstacksize(&attr, 1024 * 1024);
 
     pthread_t thread;
     int err = pthread_create(&thread, &attr, FMOD_OS_Mac_ThreadProc, start);
