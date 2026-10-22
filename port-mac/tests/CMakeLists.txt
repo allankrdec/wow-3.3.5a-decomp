@@ -33,3 +33,12 @@ target_link_libraries(WindowTest
         UIUtil Ui WorldClient WowServices WowSvcs
         "-framework Cocoa" "-framework Carbon" "-framework Security" "-framework IOKit"
 )
+
+# Stage E5 test: WowConnection over BSD sockets against a local TCP server started by the test (no WoW server needed).
+add_executable(NetTest NetTest.cpp)
+
+target_link_libraries(NetTest
+    PRIVATE
+        WowServices ObjectAlloc ConsoleBase Os Storm BlizzardCore Base
+        "-framework Cocoa" "-framework Carbon" "-framework Security" "-framework IOKit"
+)
