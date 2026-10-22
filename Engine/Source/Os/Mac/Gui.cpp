@@ -3,6 +3,7 @@
 // E7; still TODO_MAC. The parts without a window are implemented.
 
 #include "Engine/Source/Base/Platform/Mac/TodoMac.h"
+#include <cstdio>
 #include <cstdint>
 #include <malloc.h>
 #include "Engine/Source/Os/Gui.h"
@@ -120,7 +121,9 @@ void OsGuiSetGxWindow(void* window) {
 
 // Win64: 0x0086C6E0
 int32_t OsGuiMessageBox(void* parentWindow, int32_t style, const char* message, const char* title) {
+    // TODO_MAC (E7): NSAlert. Until then the text goes to stderr so startup failures are readable.
     TODO_MAC();
+    std::fprintf(stderr, "OsGuiMessageBox: %s: %s\n", title ? title : "", message ? message : "");
     return TodoMacValue<int32_t>();
 }
 

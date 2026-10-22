@@ -142,6 +142,19 @@ registra os primeiros `TODO_MAC()` (SCritSect, RMutex, Time, Thread, SLog, Storm
 
 **Objetivo:** tudo que não é janela, input ou rede funcionando de verdade.
 
+**Status (2026-10-22): concluído.** Os, Storm e BlizzardCore têm implementação Mac real (só janela/input = E4,
+rede = E5, áudio = E6, crash/clipboard/HTTP/caixas de mensagem = E7 continuam `TODO_MAC`). Os três testes
+planejados viraram um só, `port-mac/tests/DataTest` (`build-mac/bin/DataTest <pasta do jogo>`): abre as MPQs,
+lê os 11.054 arquivos da `locale-enUS.MPQ` (430 MB), valida 7 DBCs e decodifica as 10.307 texturas BLP, com
+0 falhas, em ~6 s. O próprio cliente abre as 18 MPQs, carrega a configuração e para em "não foi possível
+encontrar um dispositivo de exibição", que é o começo do E4. Achados:
+- `SRWLock` do Storm dependia da ordem de memória do x86 (escritas `volatile`); no arm64 perdia atualizações
+  e foi corrigido com atomics. Outros pontos do código com o mesmo padrão podem aparecer.
+- O `OsGetExePath` e o diretório do processo apontam para a pasta que contém o `.app`; o `Data/` fica ao lado
+  dele (localmente `bin/Mac/Data` é um link simbólico, ignorado pelo git).
+- O registro (`SReg`) fica em `~/Library/Application Support/wowdecomp/Registry.ini`.
+- No CI, o job Win32 também falha na `main` do upstream sem mudanças; é problema do runner, não do porte.
+
 - [ ] Threads, mutex recursivo, eventos (`pthread_cond`), TLS, `Sleep` e prioridade.
 - [ ] Tempo (`mach_absolute_time`, `localtime_r`, fuso horário).
 - [ ] Memória (`mmap`/`mprotect`, page size de **16 KB** via `vm_page_size`), revisando `EmergencyMem` e SMem.
