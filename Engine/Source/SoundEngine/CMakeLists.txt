@@ -7,7 +7,12 @@ set(FMODEX_FLAC_DIR ${FMODEX_DIR}/lib/flac-1.1.4)
 
 if (WOWDECOMP_PLATFORM_MAC)
     set(FMODEX_PLATFORM_DIR ${FMODEX_DIR}/mac)
-    set(FMODEX_PLATFORM_GLOBS "${FMODEX_PLATFORM_DIR}/src/*.cpp")
+    # The C versions of the distortion DSP and linear resampler live in win32/src next to their SSE assembly.
+    set(FMODEX_PLATFORM_GLOBS
+        "${FMODEX_PLATFORM_DIR}/src/*.cpp"
+        "${FMODEX_DIR}/win32/src/fmod_dsp_distortion.cpp"
+        "${FMODEX_DIR}/win32/src/fmod_dsp_resampler_linear.cpp"
+    )
 else ()
     set(FMODEX_PLATFORM_DIR ${FMODEX_DIR}/win32)
     set(FMODEX_PLATFORM_GLOBS
