@@ -1,0 +1,45 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows ${{ matrix.arch }}
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, Win32]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install NASM
+        if: matrix.arch == 'Win32'
+        uses: ilammy/setup-nasm@v1
+
+      - name: Configure
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A ${{ matrix.arch }}
+
+      - name: Build
+        run: cmake --build build --config Release --target Wow WowClient --parallel
+
+  macos:
+    name: macOS arm64
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ninja
+        run: brew install ninja
+
+      - name: Syntax check (check-clang.sh)
+        run: port-mac/tools/check-clang.sh
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build
+        run: cmake --build build
