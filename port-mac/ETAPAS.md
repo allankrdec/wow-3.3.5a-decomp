@@ -69,14 +69,18 @@
 ⬜ Vsync (swap interval 1 deu ~92 fps numa tela de 60 Hz)
 ⬜ Patches customizados `patch-6`/`patch-7` alteram o GlueXML e falham a assinatura (rodar com `WOWDECOMP_DISABLE_SIGNATURE_CHECKS` ou sem eles)
 
-## ⬜ E5: Rede e login
-⬜ `OsTcp` sobre kqueue
-⬜ `WowConnectionNet` e `WowConnection` (errno, `O_NONBLOCK`)
-⬜ `getaddrinfo` no lugar de `gethostbyname`
-⬜ `IOsVersionChecksum` para Mach-O; `OsGetOsId` configurável
-⬜ Stubs definitivos: Battle.net, Warden, BotCheck, ScanDLL, Survey, Patcher
-⬜ Mouse-look básico
+## 🔶 E5: Rede e login
+✅ Thread de rede (`WowConnectionNet`) com `poll()` e pipe para acordar
+✅ `WowConnection` em sockets BSD (errno, `O_NONBLOCK`, `SO_NOSIGPIPE`)
+✅ `getaddrinfo` no lugar de `gethostbyname`
+✅ `OsTcp`: só o que o cliente usa (`OsNetAddr*`, `OsNetPump`); o motor IOCP não é usado
+✅ `IOsVersionChecksum` para Mach-O (hash do segmento `__TEXT`)
+✅ `OsGetOsId` = `'Win'` por padrão, `'OSX'` com `-DWOWDECOMP_REPORT_OS=0x4F5358`
+✅ Stubs definitivos: Battle.net (falha limpa), Warden (o mesmo do Win64), Patcher
+✅ `port-mac/tests/NetTest`: conexão, eco, mensagens, desconexão e porta fechada (25/25)
+⬜ Servidor no ar (realmlist, conta sem `@`, Warden desligado, sem checagem estrita de versão)
 ⬜ Login → reinos → criar personagem → entrar no mundo → andar e conversar
+⬜ Mouse-look testado no mundo
 
 ## ⬜ E6: Áudio
 ⬜ `fmod_output_coreaudio.cpp` (AudioUnit) e registro como saída padrão
