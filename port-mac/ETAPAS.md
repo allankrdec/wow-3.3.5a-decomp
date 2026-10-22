@@ -14,7 +14,7 @@
   ✅ macOS arm64: `check-clang.sh` + build do `.app`
   ✅ Windows x64 (MSVC)
   ⬜ Windows Win32: falha também na `main` original do upstream; job não bloqueante até investigar
-⬜ Servidor privado local (AzerothCore/TrinityCore via Docker, Warden desligado, conta sem `@`)
+🔶 Servidor privado local (o seu servidor; Warden desligado, conta sem `@`)
 ⬜ Referência visual: `Wow64.exe -opengl` no CrossOver/Whisky
 
 ## ✅ E1: Limpeza para o clang
@@ -50,18 +50,24 @@
 ✅ O cliente abre as 18 MPQs e para em "dispositivo de exibição" (começo do E4)
 
 ## 🔶 E4: Janela, OpenGL e input
-⬜ Separar as funções WGL/Win32 do `CGxDeviceOpenGl.cpp` num arquivo de plataforma, sem mudar o código
-⬜ `CGxDeviceOpenGl` no Mac: contexto legado 2.1 (`NSOpenGLContext`), ponteiros GL via `dlsym`, swap interval, `flushBuffer`
-⬜ FBO no lugar de pbuffer
-⬜ `GxDefaultApi()` retorna `GxApi_OpenGl` no Mac
-⬜ `CGxDevice/Mac`: adaptador e lista de resoluções (`CGDisplayCopyAllDisplayModes`)
-⬜ `Os/Mac`: `NSWindow` + `WowGameView`; `OsInputGet` drena eventos com `nextEventMatchingMask`
-⬜ Input
-  ⬜ Teclado: tabela `kVK_*` → `KEY_*` e modificadores
-  ⬜ Mouse: botões, posição e scroll
-  ⬜ Texto digitado (`insertText:`)
-⬜ Teste `GxTest` (janela, quad com BLP, shader `arbvp1`/`arbfp1`)
-⬜ Tela de login renderizada e aceitando usuário e senha
+✅ Funções WGL/Win32 do `CGxDeviceOpenGl.cpp` movidas sem mudança para `CGxDeviceOpenGL/Windows/` (122 funções conferidas por script)
+✅ `CGxDeviceOpenGl` no Mac: contexto legado 2.1 (`NSOpenGLContext`), ponteiros GL via `dlsym`, swap interval, `flushBuffer`
+✅ FBO no lugar de pbuffer
+✅ D3D pedido pelo jogo vira o device OpenGL no Mac (sem mudar `GxDefaultApi()`)
+✅ `CGxDevice/Mac`: adaptador genérico e modos da tela principal
+✅ `Os/Mac`: `NSWindow` + `WowGameView`; `OsInputGet` drena eventos do Cocoa
+✅ Input
+  ✅ Teclado: tabela `kVK_*` → `KEY_*`, modificadores esquerdo/direito, repetição
+  ✅ Mouse: 5 botões, posição, scroll, modo relativo
+  ✅ Texto digitado (`insertText:`, teclas mortas)
+✅ `GxTest` (device OpenGL, clear, present, leitura do back buffer) e `WindowTest` (27 eventos sintetizados)
+✅ Correções de arm64 achadas no caminho: `CRITICAL_SECTION` desalinhada (`#pragma pack`), pilha das threads do FMOD, `INT32` de 64 bits na libjpeg, `fopen` com `\`
+✅ Thread de rede sobe (`poll()`), Warden stub do Win64 usado no Mac
+✅ **Tela de login renderizada** (screenshot do próprio jogo, 2560x1440)
+⬜ Corrigir o modelo 3D da tela de login (aparece recortado num retângulo no centro)
+⬜ Conferir à mão: digitar usuário e senha, clicar nos botões, redimensionar a janela
+⬜ Vsync (swap interval 1 deu ~92 fps numa tela de 60 Hz)
+⬜ Patches customizados `patch-6`/`patch-7` alteram o GlueXML e falham a assinatura (rodar com `WOWDECOMP_DISABLE_SIGNATURE_CHECKS` ou sem eles)
 
 ## ⬜ E5: Rede e login
 ⬜ `OsTcp` sobre kqueue
