@@ -3,7 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <windows.h>
+#include "Engine/Source/Base/Platform/WinTypes.h"
 #include <GL/gl.h>
 
 #define GL_TEXTURE0_ARB 0x84C0
@@ -295,6 +295,14 @@ extern GLint glMaxTextureImageUnitsARB;
 extern GLint glMaxTextureUnits;
 extern int32_t glExtCVA;
 extern uint32_t glVersion;
+
+#if !defined(_WIN32)
+// The two WGL calls of GlExt.cpp. On macOS every GL entry point, core or extension, is an exported symbol of the
+// OpenGL framework, so wglGetProcAddress looks it up with dlsym; there is no WGL device context (Mac/GlExtMac.cpp).
+typedef void (*PROC)();
+PROC wglGetProcAddress(const char* name);
+HDC wglGetCurrentDC();
+#endif
 
 void BindGlExtensions();
 void BindWglExtensions();

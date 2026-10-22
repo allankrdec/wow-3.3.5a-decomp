@@ -20,6 +20,20 @@ typedef struct HWND__* HWND;
 typedef struct HINSTANCE__* HINSTANCE;
 typedef uint32_t DWORD;
 
+// Handle and message types of the OpenGL backend's declarations (CGxDeviceOpenGl.h, GlExt.h); on macOS its
+// Mac/ code stores its own objects in them.
+#define DECLARE_HANDLE(name) struct name##__; typedef struct name##__* name
+typedef struct HDC__* HDC;
+typedef struct HGLRC__* HGLRC;
+// bool, not int: the same type as Objective-C's BOOL on arm64, so Objective-C++ files can include both.
+typedef bool BOOL;
+typedef unsigned int UINT;
+typedef float FLOAT;
+typedef uint16_t ATOM;
+typedef uintptr_t WPARAM;
+typedef intptr_t LPARAM;
+typedef intptr_t LRESULT;
+
 // Recursive mutex; created and destroyed by the platform Lock/SCritSect code.
 struct CRITICAL_SECTION {
     pthread_mutex_t m_mutex;
