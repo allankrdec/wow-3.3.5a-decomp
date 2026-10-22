@@ -1,0 +1,5 @@
+# Common-folder sources that are Windows-only; the Mac build replaces them with code in Mac/ folders.
+# One extended regex per line, matched against the repo-relative path. Used by check-clang.sh and the Mac CMake.
+^Engine/Source/Storm/Source/Storm\.cpp$
+^Engine/Source/Storm/Source/DebugLog\.cpp$
+^WoW/Source/Ui/UILCD/LCD\.cpp$
