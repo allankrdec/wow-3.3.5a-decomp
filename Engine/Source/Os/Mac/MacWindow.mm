@@ -114,6 +114,24 @@ static void ViewPoint(NSView* view, NSPoint pointInWindow, int32_t* x, int32_t* 
     return YES;
 }
 
+// The game draws its own cursor (CGxDevice::ICursorDraw), so over the game view the system cursor is a transparent
+// one; it comes back outside the view and when another application is active.
++ (NSCursor*)blankCursor {
+    static NSCursor* s_blankCursor;
+
+    if (!s_blankCursor) {
+        NSImage* image = [[NSImage alloc] initWithSize:NSMakeSize(16, 16)];
+        s_blankCursor = [[NSCursor alloc] initWithImage:image hotSpot:NSZeroPoint];
+        [image release];
+    }
+
+    return s_blankCursor;
+}
+
+- (void)resetCursorRects {
+    [self addCursorRect:[self bounds] cursor:[WowGameView blankCursor]];
+}
+
 - (BOOL)acceptsFirstResponder {
     return YES;
 }
