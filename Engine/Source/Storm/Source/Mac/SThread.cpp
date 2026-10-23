@@ -146,11 +146,13 @@ uint32_t STORMAPI S_Thread::s_SLaunchThread(void* threadParam) {
     return threadVal;
 }
 
-// pthread entry: runs s_SLaunchThread, then signals the thread handle (a Win32 thread handle is signaled when the
-// thread exits) and drops the thread's reference to it.
+// pthread entry: gives the thread a crash signal stack, runs s_SLaunchThread, then signals the thread handle (a
+// Win32 thread handle is signaled when the thread exits) and drops the thread's reference to it.
 static void* MacThreadStart(void* threadParam) {
     HANDLE handle = static_cast<THREADLAUNCH*>(threadParam)->threadH;
+    MacCrashInstallThreadStack();
     S_Thread::s_SLaunchThread(threadParam);
+    MacCrashRemoveThreadStack();
     MacWaitableThreadExit(handle);
     return nullptr;
 }

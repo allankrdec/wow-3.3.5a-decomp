@@ -12,6 +12,8 @@
 
 #include <cstdint>
 #include <pthread.h>
+#include <signal.h>
+#include <sys/ucontext.h>
 #include "Engine/Source/Base/Platform/WinTypes.h"
 
 #define MAC_WAIT_OBJECT_0 0x00000000
@@ -64,5 +66,26 @@ void MacOutputDebugString(const char* string);
 
 // IsDebuggerPresent.
 bool MacIsDebuggerPresent();
+
+// Crash contexts. WinTypes.h leaves CONTEXT and EXCEPTION_POINTERS opaque; on macOS they wrap what a crash signal
+// handler receives: the signal's siginfo and the ucontext of the interrupted thread (arm64: uc_mcontext->__ss
+// holds x0-x28, fp, lr, sp, pc, cpsr and __es the fault status).
+struct _CONTEXT {
+    ucontext_t* ucontext;
+};
+
+struct _EXCEPTION_POINTERS {
+    siginfo_t* ExceptionRecord;
+    CONTEXT* ContextRecord;
+};
+
+// Alternate signal stack for the crash handler on the calling thread, so a stack overflow can still be reported.
+// SErrCatchUnhandledExceptions installs one on its thread; Storm threads install their own while it is active.
+void MacCrashInstallThreadStack();
+void MacCrashRemoveThreadStack();
+
+// Fills the caches MachineState uses from the crash handler (user name, executable path) and warms up backtrace()
+// and dladdr(), so the first calls do not happen inside a signal handler.
+void MacMachineStatePrepare();
 
 #endif

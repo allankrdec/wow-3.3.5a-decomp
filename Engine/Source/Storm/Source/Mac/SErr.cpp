@@ -1,9 +1,12 @@
 // macOS counterpart of Storm/Source/Win64/SErr.cpp. Error state, handlers, error text and the error log files
-// (<game folder>/Errors/) work; the error dialog, the unhandled-exception filter and minidumps belong to the crash
-// handler (stage E7). Until then an error is reported on stderr and in the log, and the dialog's answer is taken
-// as "keep running" for recoverable errors, and for the others "break to the debugger" when one is attached,
-// "terminate" otherwise.
-
+// (<game folder>/Errors/) work. The unhandled-exception filter is a set of crash signal handlers (SIGSEGV, SIGBUS,
+// SIGILL, SIGFPE, SIGABRT, SIGTRAP) on an alternate signal stack: they turn the signal into the same
+// SErrDisplayError(STORM_ERROR_FATAL, ..., SLOG_EXCEPTION) call as ExceptionFilterWin32, which writes the "Crash"
+// log (registers, stacks, modules, memory) and runs the SErrRegisterHandler callbacks; then, instead of exiting,
+// the signal is re-raised with its default action so the process dies by it and the macOS crash reporter writes
+// its own report. No minidumps. The error dialog is not implemented yet: an error is reported on stderr and in the
+// log, and the dialog's answer is taken as "keep running" for recoverable errors, and for the others "break to the
+// debugger" when one is attached, "terminate" otherwise.
 #include "Engine/Source/Base/Platform/Mac/TodoMac.h"
 #include <cstdarg>
 #include <cstdint>
@@ -13,6 +16,8 @@
 #include <ctime>
 #include <fcntl.h>
 #include <malloc.h>
+#include <signal.h>
+#include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
 #include "Engine/Source/Base/Platform/Mac/MacSync.h"
@@ -93,7 +98,8 @@ static const char* const s_displaystr[20] = {
     "Do you wish to break to the debugger?\n\tYes:\tBreak to debugger\n\tNo:\tTerminate application",
     "Do you wish to break to the debugger?\n\tYes:\tBreak to debugger\n\tNo:\tTerminate application\n\tCancel:\tKeep running",
     "Exception:\t%s\n",
-    "The instruction at \"0x%p\" referenced memory at \"0x%p\".\nThe memory could not be \"%s\".",
+    // %p prints its own 0x on macOS: the addresses are passed as 64-bit integers.
+    "The instruction at \"0x%016llX\" referenced memory at \"0x%016llX\".\nThe memory could not be \"%s\".",
     "read",
     "written",
     "Couldn't locate the \"DbgHelp.dll\" debugging DLL.\n\nSome debugging information will be missing from error log files. Press OK to continue, or press Cancel to terminate the program.",
@@ -127,6 +133,24 @@ static int32_t (STORMAPI* s_logCallback)(char*, uint32_t);
 static uint32_t s_noMiniDumps;
 
 static char s_logLastFile[MAX_PATH];
+
+// Signals caught as unhandled exceptions.
+static const int s_crashSignals[] = { SIGSEGV, SIGBUS, SIGILL, SIGFPE, SIGABRT, SIGTRAP };
+
+static volatile int32_t s_catchingExceptions;
+
+// Mach port of the thread reporting a crash (0: none). While it is set, SErrDisplayError returns to the signal
+// handler instead of exiting.
+static volatile uint32_t s_crashThread;
+
+static EXCEPTION_POINTERS s_crashPointers;
+
+static CONTEXT s_crashContext;
+
+static const size_t CRASH_STACK_SIZE = 1024 * 1024;
+
+// The alternate signal stack this thread got from MacCrashInstallThreadStack (mapping start, guard page included).
+static thread_local void* t_crashStack;
 
 template <class T, class TGetLink>
 T* TSListWinHeap<T, TGetLink>::NewNode(uint32_t location, size_t extrabytes, uint32_t flags) {
@@ -657,12 +681,13 @@ int32_t STORMAPI SErrDisplayError(uint32_t errorcode, const char* filename, int3
         LoadMachineStateSymbols();
         InternalEnterCriticalSection(&s_exceptioncritsect);
 
-        static EXCEPTION_POINTERS* exceptionPointers = s_exceptionPointers;
+        // A static on Windows, initialized once; assigned on every call here.
+        static EXCEPTION_POINTERS* exceptionPointers;
+        exceptionPointers = s_exceptionPointers;
         s_exceptionPointers = nullptr;
         InternalLeaveCriticalSection(&s_exceptioncritsect);
 
-        // Crash contexts come from the exception handler (stage E7); until then every log is an "Error" log.
-        CONTEXT* context = nullptr;
+        CONTEXT* context = exceptionPointers ? exceptionPointers->ContextRecord : nullptr;
 
         static tm time;
         time_t now = ::time(nullptr);
@@ -764,6 +789,11 @@ int32_t STORMAPI SErrDisplayError(uint32_t errorcode, const char* filename, int3
         return 1;
     }
 
+    if (s_crashThread && s_crashThread == SGetCurrentThreadId()) {
+        // Terminating after a crash: the signal handler re-raises the signal.
+        return 0;
+    }
+
     fflush(nullptr);
     _exit(exitcode);
 }
@@ -796,6 +826,229 @@ void STORMAPI SErrReportNamedResourceLeak(const char* handlename, const char* re
         MacOutputDebugString(szMessage);
     } else {
         SErrDisplayError(STORM_ERROR_RESOURCES_NOT_RELEASED, errormessage, SLOG_HANDLE, nullptr, 1, 1, 0x11111111);
+    }
+}
+
+static const char* GetSignalName(int signal) {
+    switch (signal) {
+        case SIGSEGV:
+            return "SIGSEGV";
+        case SIGBUS:
+            return "SIGBUS";
+        case SIGILL:
+            return "SIGILL";
+        case SIGFPE:
+            return "SIGFPE";
+        case SIGABRT:
+            return "SIGABRT";
+        case SIGTRAP:
+            return "SIGTRAP";
+        default:
+            return "signal";
+    }
+}
+
+// The Windows exception code and name of a crash signal.
+// Win64: 0x007714E0
+static uint32_t GetExceptionNameMac(const siginfo_t* info, char* buffer, uint32_t buffersize) {
+    struct EXCEPTIONNAME {
+        uint32_t code;
+        const char* name;
+    };
+
+    EXCEPTIONNAME name = { 0, "UNKNOWN" };
+
+    switch (info->si_signo) {
+        case SIGSEGV:
+            name = { 0xC0000005, "ACCESS_VIOLATION" };
+            break;
+        case SIGBUS:
+            name = info->si_code == BUS_ADRALN ? EXCEPTIONNAME { 0x80000002, "DATATYPE_MISALIGNMENT" } : EXCEPTIONNAME { 0xC0000005, "ACCESS_VIOLATION" };
+            break;
+        case SIGILL:
+            name = info->si_code == ILL_PRVOPC ? EXCEPTIONNAME { 0xC0000096, "PRIV_INSTRUCTION" } : EXCEPTIONNAME { 0xC000001D, "ILLEGAL_INSTRUCTION" };
+            break;
+        case SIGFPE:
+            switch (info->si_code) {
+                case FPE_INTDIV:
+                    name = { 0xC0000094, "INT_DIVIDE_BY_ZERO" };
+                    break;
+                case FPE_INTOVF:
+                    name = { 0xC0000095, "INT_OVERFLOW" };
+                    break;
+                case FPE_FLTDIV:
+                    name = { 0xC000008E, "FLT_DIVIDE_BY_ZERO" };
+                    break;
+                case FPE_FLTOVF:
+                    name = { 0xC0000091, "FLT_OVERFLOW" };
+                    break;
+                case FPE_FLTUND:
+                    name = { 0xC0000093, "FLT_UNDERFLOW" };
+                    break;
+                case FPE_FLTRES:
+                    name = { 0xC000008F, "FLT_INEXACT_RESULT" };
+                    break;
+                default:
+                    name = { 0xC0000090, "FLT_INVALID_OPERATION" };
+                    break;
+            }
+            break;
+        case SIGTRAP:
+            name = { 0x80000003, "BREAKPOINT" };
+            break;
+        case SIGABRT:
+            // abort(): the status of the Windows CRT's abort.
+            name = { 0x40000015, "FATAL_APP_EXIT" };
+            break;
+    }
+
+    SStrCopy(buffer, name.name, buffersize);
+    return name.code;
+}
+
+static void WriteCrashText(int fd, const char* text) {
+    WriteFileText(fd, text, strlen(text));
+}
+
+// Puts the signal back to its default action. A fault (si_code > 0 for a signal the kernel sent for an
+// instruction) happens again when the handler returns and kills the process at the faulting instruction, so the
+// macOS crash report shows the real crash state; other signals (abort, kill) are raised again.
+static void ReraiseCrashSignal(int signal, const siginfo_t* info) {
+    for (int crashSignal : s_crashSignals) {
+        ::signal(crashSignal, SIG_DFL);
+    }
+
+    bool fault = signal != SIGABRT && info->si_code > 0;
+
+    if (!fault) {
+        raise(signal);
+    }
+}
+
+// The ExceptionFilterWin32 of the Windows version.
+// Win64: 0x00772760
+static void ExceptionSignalHandler(int signal, siginfo_t* info, void* ucontext) {
+    static char exceptionname[40];
+    static char buffer[160];
+    static char message[256];
+
+    uint32_t threadId = SGetCurrentThreadId();
+    uint32_t expected = 0;
+
+    if (!__atomic_compare_exchange_n(&s_crashThread, &expected, threadId, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE)) {
+        if (expected != threadId) {
+            // Another thread is already reporting a crash and ends the process: wait for it.
+            for (;;) {
+                pause();
+            }
+        }
+
+        // A crash inside the crash report.
+        char path[MAX_PATH];
+        MacGetModuleDirectory(path, sizeof(path));
+        SStrPack(path, "Errors/exception-failed.txt", sizeof(path));
+        int file = open(path, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0644);
+
+        if (file >= 0) {
+            WriteCrashText(file, "Exception handler died\r\n");
+            WriteCrashText(file, "Original exception:\r\n");
+            WriteCrashText(file, buffer);
+            WriteCrashText(file, "\r\n");
+            WriteCrashText(file, message);
+            close(file);
+        }
+
+        ReraiseCrashSignal(signal, info);
+        return;
+    }
+
+    s_crashContext.ucontext = static_cast<ucontext_t*>(ucontext);
+    s_crashPointers.ExceptionRecord = info;
+    s_crashPointers.ContextRecord = &s_crashContext;
+
+    InternalEnterCriticalSection(&s_exceptioncritsect);
+
+    if (!s_exceptionPointers) {
+        s_exceptionPointers = &s_crashPointers;
+    }
+
+    InternalLeaveCriticalSection(&s_exceptioncritsect);
+
+    exceptionname[0] = 0;
+    buffer[0] = 0;
+    message[0] = 0;
+
+    const __darwin_arm_thread_state64& ss = s_crashContext.ucontext->uc_mcontext->__ss;
+    const __darwin_arm_exception_state64& es = s_crashContext.ucontext->uc_mcontext->__es;
+    unsigned long long pc = arm_thread_state64_get_pc(ss) & 0x0000FFFFFFFFFFFFULL;
+    uint32_t code = GetExceptionNameMac(info, exceptionname, sizeof(exceptionname));
+    SStrPrintf(buffer, sizeof(buffer), "0x%08X (%s) at 0x%016llX (%s)", code, exceptionname, pc, GetSignalName(signal));
+
+    if (code == 0xC0000005) {
+        // ESR: an EL0 data abort (exception class 0x24) has WnR in bit 6; the faulting address is FAR.
+        bool written = (es.__esr >> 26) == 0x24 && (es.__esr & (1u << 6));
+        unsigned long long address = info->si_addr ? reinterpret_cast<uintptr_t>(info->si_addr) : es.__far;
+        char format[256];
+        SStrCopy(format, GetErrorString(SERR_STR_ACCESS_VIOLATION), sizeof(format));
+        SStrPrintf(message, sizeof(message), format, pc, address, GetErrorString(written ? SERR_STR_WRITTEN : SERR_STR_READ));
+    }
+
+    SErrDisplayError(STORM_ERROR_FATAL, buffer, SLOG_EXCEPTION, message, 0, 1, 0x11111111);
+
+    ReraiseCrashSignal(signal, info);
+}
+
+void MacCrashInstallThreadStack() {
+    if (!s_catchingExceptions) {
+        return;
+    }
+
+    stack_t current;
+
+    if (sigaltstack(nullptr, &current) == 0 && !(current.ss_flags & SS_DISABLE)) {
+        return;
+    }
+
+    // One guard page below the stack.
+    size_t pageSize = static_cast<size_t>(getpagesize());
+    void* memory = mmap(nullptr, CRASH_STACK_SIZE + pageSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
+
+    if (memory == MAP_FAILED) {
+        return;
+    }
+
+    mprotect(memory, pageSize, PROT_NONE);
+
+    stack_t stack;
+    stack.ss_sp = static_cast<char*>(memory) + pageSize;
+    stack.ss_size = CRASH_STACK_SIZE;
+    stack.ss_flags = 0;
+
+    if (sigaltstack(&stack, nullptr)) {
+        munmap(memory, CRASH_STACK_SIZE + pageSize);
+    } else {
+        t_crashStack = memory;
+    }
+}
+
+void MacCrashRemoveThreadStack() {
+    if (!t_crashStack) {
+        return;
+    }
+
+    stack_t current;
+
+    if (sigaltstack(nullptr, &current) || (current.ss_flags & SS_ONSTACK)) {
+        return;
+    }
+
+    stack_t disable;
+    memset(&disable, 0, sizeof(disable));
+    disable.ss_flags = SS_DISABLE;
+
+    if (sigaltstack(&disable, nullptr) == 0) {
+        munmap(t_crashStack, CRASH_STACK_SIZE + static_cast<size_t>(getpagesize()));
+        t_crashStack = nullptr;
     }
 }
 
@@ -851,8 +1104,25 @@ int32_t SErrDisplayErrorFmt(uint32_t errorcode, const char* filename, int32_t li
 
 // Win64: 0x00772B20
 void STORMAPI SErrCatchUnhandledExceptions() {
-    // Unhandled exception filter (signal handlers + Crash log): stage E7.
-    TODO_MAC();
+    if (s_catchingExceptions) {
+        return;
+    }
+
+    MacMachineStatePrepare();
+    s_catchingExceptions = 1;
+    MacCrashInstallThreadStack();
+
+    struct sigaction action;
+    memset(&action, 0, sizeof(action));
+    action.sa_sigaction = ExceptionSignalHandler;
+    // SA_NODEFER: a fault inside the handler is caught again (and reported as "Exception handler died") instead of
+    // killing the process silently.
+    action.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_NODEFER;
+    sigemptyset(&action.sa_mask);
+
+    for (int signal : s_crashSignals) {
+        sigaction(signal, &action, nullptr);
+    }
 }
 
 // Win64: 0x008889B0

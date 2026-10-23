@@ -360,17 +360,26 @@ void MacGetModuleFileName(char* buffer, uint32_t bufferchars) {
         return;
     }
 
-    char path[PATH_MAX];
-    uint32_t size = sizeof(path);
+    // The path never changes: resolved once, so later calls (the crash handler's among them) only copy it.
+    static char s_resolved[PATH_MAX];
+    static volatile bool s_cached;
     buffer[0] = 0;
 
-    if (_NSGetExecutablePath(path, &size)) {
-        return;
+    if (!s_cached) {
+        char path[PATH_MAX];
+        uint32_t size = sizeof(path);
+
+        if (_NSGetExecutablePath(path, &size)) {
+            return;
+        }
+
+        char resolved[PATH_MAX];
+        const char* result = realpath(path, resolved) ? resolved : path;
+        snprintf(s_resolved, sizeof(s_resolved), "%s", result);
+        __atomic_store_n(&s_cached, true, __ATOMIC_RELEASE);
     }
 
-    char resolved[PATH_MAX];
-    const char* result = realpath(path, resolved) ? resolved : path;
-    snprintf(buffer, bufferchars, "%s", result);
+    snprintf(buffer, bufferchars, "%s", s_resolved);
 }
 
 void MacGetModuleDirectory(char* buffer, uint32_t bufferchars) {
