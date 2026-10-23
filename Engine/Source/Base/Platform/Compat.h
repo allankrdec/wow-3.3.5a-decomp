@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
+#include <stdarg.h>
 
 // Calling conventions: arm64 and x86_64 SysV have a single one.
 #define __stdcall
@@ -49,8 +50,6 @@ typedef int32_t LONG;
 
 #define _stricmp strcasecmp
 #define _strnicmp strncasecmp
-#define _snprintf snprintf
-#define _vsnprintf vsnprintf
 #define _strdup strdup
 #define _strtoi64 strtoll
 #define _strtoui64 strtoull
@@ -87,6 +86,42 @@ static inline int fopen_s(FILE** stream, const char* filename, const char* mode)
     *stream = WowCompatFopen(filename, mode);
     return *stream ? 0 : errno;
 }
+
+// The MSVC CRT reads the 64-bit size prefix "I64" (%I64d, %I64u, %I64X), which Storm's soprintf writes for "ll".
+static inline const char* WowCompatFormat(const char* format, char* buffer, size_t size) {
+    if (!strstr(format, "I64") || strlen(format) >= size) {
+        return format;
+    }
+
+    size_t out = 0;
+    for (const char* f = format; *f; f++) {
+        if (f[0] == 'I' && f[1] == '6' && f[2] == '4') {
+            buffer[out++] = 'l';
+            buffer[out++] = 'l';
+            f += 2;
+        } else {
+            buffer[out++] = *f;
+        }
+    }
+    buffer[out] = '\0';
+    return buffer;
+}
+
+static inline int WowCompatVsnprintf(char* dest, size_t count, const char* format, va_list args) {
+    char buffer[256];
+    return vsnprintf(dest, count, WowCompatFormat(format, buffer, sizeof(buffer)), args);
+}
+
+static inline int WowCompatSnprintf(char* dest, size_t count, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    int result = WowCompatVsnprintf(dest, count, format, args);
+    va_end(args);
+    return result;
+}
+
+#define _snprintf WowCompatSnprintf
+#define _vsnprintf WowCompatVsnprintf
 
 static inline unsigned int _rotl(unsigned int value, int shift) {
     return __builtin_rotateleft32(value, (unsigned int)shift);
