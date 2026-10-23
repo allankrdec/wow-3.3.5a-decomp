@@ -94,7 +94,7 @@
 ✅ Conferido no jogo pelo usuário: música e efeitos tocando
 ⬜ (fora do escopo por enquanto) Gravação para o voice chat
 
-## 🔶 E7: Jogabilidade completa
+## ✅ E7: Jogabilidade completa
 ✅ Mouse-look sem aceleração; cursor recapturado no alt-tab (conferir com mouse real)
 ✅ Fullscreen como janela sem borda no monitor da janela; resize, minimizar, foco, troca ao vivo; Retina em pontos
 ✅ Atalhos: menu do app, Cmd+Q (como Alt+F4), Cmd+H, Cmd+M; Cmd como Ctrl com `WOWDECOMP_MAC_CMD_AS_CTRL=1`
@@ -104,7 +104,7 @@
 ✅ `rand()` igual ao do MSVC (15 bits): corrige as nuvens do céu e o sorteio de repetição das animações
 ✅ Filmes (xvidcore arm64 + XvidDecoder): 6.402 frames decodificados no `MovieTest`
 ✅ Cinemática dentro do jogo (vídeo + som), conferida pelo usuário
-⬜ Gamma (opcional)
+✅ Gamma em tela cheia (como o `SetDeviceGammaRamp` do Windows): sobre a curva ColorSync do monitor, desfeito ao sair da tela cheia, no Cmd+Tab e ao fechar (falta conferir no jogo)
 ✅ (testado e desfeito a pedido) Voo em Kalimdor e nos Reinos do Leste: `scripts/liberar-voo-areatable.py` + `Data/patch-8-voar.MPQ.disable`; funciona, mas o mundo antigo não tem colisão nem construções completas para voo
 
 ## 🔶 E8: Empacotamento e estabilização
@@ -115,3 +115,4 @@
 ✅ README de build e uso para Mac (seção "macOS (Apple Silicon)" do `README.md`)
 
 ## ⬜ E9 (opcional): backend Metal
+⬜ Não será feito por enquanto (decisão do usuário, 2026-10-23): o OpenGL dá 60 fps estáveis

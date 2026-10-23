@@ -9,7 +9,9 @@
 // - Render targets: there are no pbuffers. When EXT_framebuffer_object exists the device renders to textures through
 //   FBOs (IDeviceSetRenderTargetFBO); otherwise IDeviceSetRenderTargetCopy copies from the back buffer.
 // - Display modes: the display mode never changes; fullscreen is a borderless window over the main screen.
-// - Gamma: hardware gamma is not used (the ramp is kept, nothing is sent to the display).
+// - Gamma: like SetDeviceGammaRamp on Windows, only in fullscreen: the ramp goes to the window's display while the app
+//   is active, composed over the display's own (ColorSync) transfer table so gamma 1.0 leaves the display untouched.
+//   Leaving fullscreen, deactivating (Cmd+Tab) or destroying the device restores the display.
 // - Vsync: the GL swap interval is set, but the GL-over-Metal renderer does not hold flushBuffer to the refresh
 //   (swap interval 1 gives ~80 fps on a 60 Hz screen, frontmost or not), so with vsync on ScenePresent also waits for
 //   the next refresh of the window's screen, counted by a CVDisplayLink.
@@ -39,6 +41,62 @@ static int32_t s_deviceChanging;
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
+// Gamma: the display the ramp is on, and that display's transfer table from before (sampled at the ramp's 256 inputs).
+static CGDirectDisplayID s_gammaDisplay;
+static CGGammaValue s_systemGamma[3][256];
+
+static void GammaRestore() {
+    if (s_gammaDisplay) {
+        CGDisplayRestoreColorSyncSettings();
+        s_gammaDisplay = 0;
+    }
+}
+
+static void GammaUpdate(CGxDeviceOpenGl* device) {
+    NSWindow* window = device->m_hwnd ? [reinterpret_cast<NSView*>(device->m_hwnd) window] : nil;
+
+    if (device->m_format.m_window || !window || ![NSApp isActive]) {
+        GammaRestore();
+        return;
+    }
+
+    CGDirectDisplayID display = [[[[window screen] deviceDescription] objectForKey:@"NSScreenNumber"] unsignedIntValue];
+
+    if (!display) {
+        GammaRestore();
+        return;
+    }
+
+    if (display != s_gammaDisplay) {
+        GammaRestore();
+
+        uint32_t count = 0;
+        if (CGGetDisplayTransferByTable(display, 256, s_systemGamma[0], s_systemGamma[1], s_systemGamma[2], &count) != kCGErrorSuccess || count != 256) {
+            for (uint32_t i = 0; i < 256; i++) {
+                s_systemGamma[0][i] = s_systemGamma[1][i] = s_systemGamma[2][i] = i / 255.0f;
+            }
+        }
+    }
+
+    // The game's ramp maps each input level to an output level; the display's table then applies to that output.
+    const uint16_t* ramp[3] = { device->m_gammaRamp.m_red, device->m_gammaRamp.m_green, device->m_gammaRamp.m_blue };
+    CGGammaValue table[3][256];
+
+    for (uint32_t c = 0; c < 3; c++) {
+        for (uint32_t i = 0; i < 256; i++) {
+            float position = ramp[c][i] * (255.0f / 65535.0f);
+            uint32_t index = static_cast<uint32_t>(position);
+            uint32_t next = index < 255 ? index + 1 : 255;
+            float t = position - index;
+            table[c][i] = s_systemGamma[c][index] + (s_systemGamma[c][next] - s_systemGamma[c][index]) * t;
+        }
+    }
+
+    if (CGSetDisplayTransferByTable(display, 256, table[0], table[1], table[2]) == kCGErrorSuccess) {
+        s_gammaDisplay = display;
+    }
+}
 
 // Vsync: s_refreshCount counts the refreshes of the screen (CVDisplayLink thread); ScenePresent waits until it passes
 // the count of the previous present.
@@ -242,10 +300,12 @@ static void WindowEventGl(void* param, MacWindowEvent event, int32_t width, int3
 
         case MacWindowEvent_FocusGained:
             device->DeviceWM(GxWM_SetFocus, 0, 0);
+            GammaUpdate(device);
             break;
 
         case MacWindowEvent_FocusLost:
             device->DeviceWM(GxWM_KillFocus, 0, 0);
+            GammaUpdate(device);
             break;
 
         // WM_CLOSE goes to the application's window procedure on Windows; Os/Mac turns the close into the quit
@@ -303,6 +363,7 @@ int32_t CGxDeviceOpenGl::SetFormatMode(CGxFormat& format) {
 
 void CGxDeviceOpenGl::IDevRemoveGlContext() {
     this->DeviceDestroyPbuffer();
+    GammaRestore();
 
     if (this->m_hglrc) {
         NSOpenGLContext* context = GlContext(this->m_hglrc);
@@ -344,10 +405,12 @@ void CGxDeviceOpenGl::DeviceDestroy() {
 
 void CGxDeviceOpenGl::DeviceSetGamma(float gamma) {
     CGxDevice::DeviceSetGamma(gamma);
+    GammaUpdate(this);
 }
 
 void CGxDeviceOpenGl::DeviceSetGamma(const CGxGammaRamp& ramp) {
     CGxDevice::DeviceSetGamma(ramp);
+    GammaUpdate(this);
 }
 
 // No pbuffers on macOS: render targets are FBOs when the extension exists (always, in the legacy context).
