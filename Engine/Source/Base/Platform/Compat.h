@@ -82,6 +82,31 @@ static inline FILE* WowCompatFopen(const char* filename, const char* mode) {
 }
 #define fopen WowCompatFopen
 
+#if defined(__cplusplus)
+// The MSVC CRT rand(): 15-bit results (RAND_MAX 0x7FFF), a per-thread seed starting at 1. The game scales rand()
+// by 1/32767 or 1/0x8000 (cloud noise, model animation repeats), which the 31-bit libc rand() breaks. A C++
+// inline function keeps one seed per thread across all translation units.
+inline unsigned int& WowCompatRandSeed() {
+    static thread_local unsigned int s_seed = 1;
+    return s_seed;
+}
+
+inline void WowCompatSrand(unsigned int seed) {
+    WowCompatRandSeed() = seed;
+}
+
+inline int WowCompatRand() {
+    unsigned int& seed = WowCompatRandSeed();
+    seed = seed * 214013u + 2531011u;
+    return static_cast<int>((seed >> 16) & 0x7FFF);
+}
+
+#define rand WowCompatRand
+#define srand WowCompatSrand
+#undef RAND_MAX
+#define RAND_MAX 0x7FFF
+#endif
+
 static inline int fopen_s(FILE** stream, const char* filename, const char* mode) {
     *stream = WowCompatFopen(filename, mode);
     return *stream ? 0 : errno;
