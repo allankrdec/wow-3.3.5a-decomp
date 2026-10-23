@@ -82,6 +82,7 @@
 ✅ `port-mac/tests/NetTest`: conexão, eco, mensagens, desconexão e porta fechada (25/25)
 ✅ Servidor no ar (192.168.1.62, reino Trinity)
 ✅ Login → reinos → seleção de personagem → entrar no mundo (Warroot em Stormwind)
+✅ Login preso em "Conectando": `connect()` que falha na hora (ex.: sem permissão de Rede Local) agora vira `WCCantConnect`; `NSLocalNetworkUsageDescription` no `Info.plist`
 ⬜ Andar, conversar no chat, sessão longa sem queda
 ⬜ Mouse-look testado no mundo
 
@@ -100,6 +101,7 @@
 ✅ Clipboard (`NSPasteboard`), abrir URL (`NSWorkspace`), `NSAlert`
 ✅ Crash handler (`sigaction`, pilha alternativa, registradores arm64, pilha de todas as threads) → `Errors/<data> Crash.txt`
 ✅ HTTP (`URL.mm`, `OsURLDownload.mm` com `NSURLSession`); `_snprintf` aceita `%I64d`
+✅ `rand()` igual ao do MSVC (15 bits): corrige as nuvens do céu e o sorteio de repetição das animações
 ✅ Filmes (xvidcore arm64 + XvidDecoder): 6.402 frames decodificados no `MovieTest`
 ⬜ Conferir uma cinemática dentro do jogo (vídeo + som)
 ⬜ Gamma (opcional)

@@ -8,6 +8,7 @@
 
 #include <alloca.h>
 #include <cerrno>
+#include <cstdio>
 #include <cstring>
 #include <fcntl.h>
 #include <netdb.h>
@@ -726,11 +727,32 @@ void WowConnection::StartConnect() {
             return;
         }
 
-        static_cast<void>(errno);
+        // Winsock reports a failed connect through FD_CONNECT, so on Windows the response always hears about it.
+        // macOS can refuse at once (EHOSTUNREACH when the app has no Local Network access, ENETUNREACH, ...):
+        // report that as WCCantConnect too, instead of leaving the caller waiting on a connection that never
+        // started ("Connecting" forever).
+        int32_t error = errno;
+        std::fprintf(stderr, "WowConnection: connect() to %s:%u failed: %s\n", inet_ntoa(address.sin_addr), this->m_connectPort, std::strerror(error));
 
         WowConnection::s_network->Remove(this);
         this->CloseSocket(this->m_sock);
         this->m_sock = -1;
+        this->SetState(WOWC_DISCONNECTED);
+        this->AddRef();
+        this->AcquireResponseRef();
+
+        WowConnectionResponse* response = this->m_response;
+        this->m_lock.Leave();
+
+        if (response) {
+            response->WCCantConnect(this, OsGetAsyncTimeMs(), &this->m_peer);
+        }
+
+        this->m_lock.Enter();
+        this->ReleaseResponseRef();
+        this->m_lock.Leave();
+        this->Release();
+        return;
     }
 
     this->SetState(WOWC_ERROR);

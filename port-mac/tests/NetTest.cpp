@@ -10,6 +10,8 @@
 //  2. host name: connect to "localhost" (getaddrinfo), client-side Disconnect() → WCDisconnected.
 //  3. message mode: the server sends framed packets (2- and 3-byte headers) → WCMessageReady.
 //  4. refused: connect to a closed port → WCCantConnect.
+//  5. immediate failure: connect() itself fails (a multicast address; on a user's machine, EHOSTUNREACH without
+//     Local Network access) → WCCantConnect, instead of a login stuck on "Connecting".
 // Also checks the OsNetAddr helpers and the Mac versionproof checksum (IOsVersionChecksum).
 // Exit code 0 when everything passed.
 
@@ -361,6 +363,22 @@ static void TestVersionChecksum() {
     Check(IOsVersionChecksum(none, "unicows.dll", 0) == 0 && none.m_bytes == 0, "unicows.dll missing → 0");
 }
 
+static void TestImmediateFailure() {
+    std::printf("-- connect() fails at once\n");
+
+    TestResponse response;
+    WowConnection* connection = new (__FILE__, __LINE__) WowConnection(&response, nullptr);
+    connection->SetType(WOWC_TYPE_STREAM);
+    connection->Connect("224.0.0.1", 3724, 5000);
+
+    Check(response.m_cantConnect == 1, "WCCantConnect");
+    Check(response.m_connected == 0 && response.m_disconnected == 0, "no WCConnected/WCDisconnected");
+    Check(connection->m_connState == WOWC_DISCONNECTED && connection->m_sock == -1, "state is WOWC_DISCONNECTED, socket closed");
+
+    connection->SetResponse(nullptr, false);
+    connection->Release();
+}
+
 int main(int argc, char* argv[]) {
     StormRtlInitialize();
     StormInitialize();
@@ -378,6 +396,7 @@ int main(int argc, char* argv[]) {
     TestHostNameAndClientDisconnect();
     TestMessages();
     TestRefused();
+    TestImmediateFailure();
 
     WowConnection::DestroyOsNet();
     OsTimeManagerDestroy();
