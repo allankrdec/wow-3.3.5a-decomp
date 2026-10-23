@@ -6,7 +6,7 @@
 ✅ Métricas do código e experimento com o clang arm64 (docs 01–10)
 ✅ Decisões: só arm64, servidor privado com login Grunt, um código multiplataforma num fork
 
-## 🔶 E0: Ambiente
+## ✅ E0: Ambiente
 ✅ Xcode, CMake e Ninja instalados
 ✅ Fork próprio, branch `port-mac`, remote `upstream` (SatyPardus/wowdecomp)
 ✅ `Data/` do cliente 3.3.5a enUS localizado (`bin/Mac/Data` é um link simbólico, fora do git)
@@ -14,7 +14,7 @@
   ✅ macOS arm64: `check-clang.sh` + build do `.app`
   ✅ Windows x64 (MSVC)
   ⬜ Windows Win32: falha também na `main` original do upstream; job não bloqueante até investigar
-🔶 Servidor privado local (o seu servidor; Warden desligado, conta sem `@`)
+✅ Servidor privado local (192.168.1.62; Warden desligado, conta sem `@`)
 ⬜ Referência visual: `Wow64.exe -opengl` no CrossOver/Whisky
 
 ## ✅ E1: Limpeza para o clang
@@ -64,8 +64,10 @@
 ✅ Correções de arm64 achadas no caminho: `CRITICAL_SECTION` desalinhada (`#pragma pack`), pilha das threads do FMOD, `INT32` de 64 bits na libjpeg, `fopen` com `\`
 ✅ Thread de rede sobe (`poll()`), Warden stub do Win64 usado no Mac
 ✅ **Tela de login renderizada** (screenshot do próprio jogo, 2560x1440)
-⬜ Corrigir o modelo 3D da tela de login (aparece recortado num retângulo no centro)
-⬜ Conferir à mão: digitar usuário e senha, clicar nos botões, redimensionar a janela
+✅ Cenário 3D da tela de login e da seleção de personagem: bug da decompilação em `IXformSetProjection` (bit 31 em vez do bit 7) encolhia toda cena 3D do backend OpenGL em 5x; corrigido (afeta também o `-opengl` do Windows; selo `VERIFY` a refazer)
+✅ Conferido à mão: digitar usuário e senha, clicar nos botões
+✅ Cursor do sistema escondido sobre a janela (o jogo desenha o próprio cursor)
+⬜ Texturas dos modelos limitadas a 256x256 no Mac
 ⬜ Vsync (swap interval 1 deu ~92 fps numa tela de 60 Hz)
 ⬜ Patches customizados `patch-6`/`patch-7` alteram o GlueXML e falham a assinatura (rodar com `WOWDECOMP_DISABLE_SIGNATURE_CHECKS` ou sem eles)
 
@@ -78,8 +80,9 @@
 ✅ `OsGetOsId` = `'Win'` por padrão, `'OSX'` com `-DWOWDECOMP_REPORT_OS=0x4F5358`
 ✅ Stubs definitivos: Battle.net (falha limpa), Warden (o mesmo do Win64), Patcher
 ✅ `port-mac/tests/NetTest`: conexão, eco, mensagens, desconexão e porta fechada (25/25)
-⬜ Servidor no ar (realmlist, conta sem `@`, Warden desligado, sem checagem estrita de versão)
-⬜ Login → reinos → criar personagem → entrar no mundo → andar e conversar
+✅ Servidor no ar (192.168.1.62, reino Trinity)
+✅ Login → reinos → seleção de personagem → entrar no mundo (Warroot em Stormwind)
+⬜ Andar, conversar no chat, sessão longa sem queda
 ⬜ Mouse-look testado no mundo
 
 ## ⬜ E6: Áudio
