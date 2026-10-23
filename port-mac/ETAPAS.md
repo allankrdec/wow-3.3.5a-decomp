@@ -103,7 +103,7 @@
 ✅ HTTP (`URL.mm`, `OsURLDownload.mm` com `NSURLSession`); `_snprintf` aceita `%I64d`
 ✅ `rand()` igual ao do MSVC (15 bits): corrige as nuvens do céu e o sorteio de repetição das animações
 ✅ Filmes (xvidcore arm64 + XvidDecoder): 6.402 frames decodificados no `MovieTest`
-⬜ Conferir uma cinemática dentro do jogo (vídeo + som)
+✅ Cinemática dentro do jogo (vídeo + som), conferida pelo usuário
 ⬜ Gamma (opcional)
 ✅ (testado e desfeito a pedido) Voo em Kalimdor e nos Reinos do Leste: `scripts/liberar-voo-areatable.py` + `Data/patch-8-voar.MPQ.disable`; funciona, mas o mundo antigo não tem colisão nem construções completas para voo
 
