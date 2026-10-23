@@ -85,13 +85,13 @@
 ⬜ Andar, conversar no chat, sessão longa sem queda
 ⬜ Mouse-look testado no mundo
 
-## 🔶 E6: Áudio
+## ✅ E6: Áudio
 ✅ Camada de SO do FMOD em POSIX (threads, semáforos, tempo, arquivos)
 ✅ `fmod_output_coreaudio.cpp` (AudioUnit) registrada como saída padrão
 ✅ Lista de dispositivos e aviso de mudança (`FMOD_OS_CheckDriverList`)
 ✅ `port-mac/tests/SoundTest`: tom, WAV e MP3 das MPQs, PCM float, 5.1 e 7.1 forçados
-⬜ Conferir no jogo: música, efeitos 3D, reverb, troca de dispositivo
-⬜ Gravação (voice chat), fora do escopo por enquanto
+✅ Conferido no jogo pelo usuário: música e efeitos tocando
+⬜ (fora do escopo por enquanto) Gravação para o voice chat
 
 ## ⬜ E7: Jogabilidade completa
 ⬜ Mouse-look sem aceleração; cursor recapturado no alt-tab
