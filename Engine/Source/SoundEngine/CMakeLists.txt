@@ -56,6 +56,17 @@ target_compile_definitions(fmodex
         FLAC__HAS_OGG=1
 )
 
+if (WOWDECOMP_PLATFORM_MAC)
+    # mac/src/fmod_output_coreaudio.cpp
+    target_link_libraries(fmodex
+        INTERFACE
+            "-framework AudioToolbox"
+            "-framework AudioUnit"
+            "-framework CoreAudio"
+            "-framework CoreFoundation"
+    )
+endif ()
+
 if (WIN32)
     target_link_libraries(fmodex
         INTERFACE

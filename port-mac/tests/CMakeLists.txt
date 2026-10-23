@@ -42,3 +42,12 @@ target_link_libraries(NetTest
         WowServices ObjectAlloc ConsoleBase Os Storm BlizzardCore Base
         "-framework Cocoa" "-framework Carbon" "-framework Security" "-framework IOKit"
 )
+
+# Stage E6 test: FMOD Ex through the CoreAudio output plugin; plays ~12 s of quiet audio (SoundTest [game folder]).
+add_executable(SoundTest SoundTest.cpp)
+
+target_link_libraries(SoundTest
+    PRIVATE
+        fmodex BlizzardCore Storm Os Base
+        "-framework Cocoa" "-framework Carbon" "-framework Security" "-framework IOKit" "-framework AudioUnit"
+)

@@ -402,6 +402,7 @@
 #elif defined(PLATFORM_MAC)
 
     /* wowdecomp macOS port: CoreAudio output lives in mac/src. No CD audio, Windows Media or AAC/CELT. */
+    #define FMOD_SUPPORT_COREAUDIO
     #define FMOD_SUPPORT_PRAGMAPACK
 
     #undef FMOD_SUPPORT_ASF

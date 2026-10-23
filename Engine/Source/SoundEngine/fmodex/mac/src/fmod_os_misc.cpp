@@ -8,6 +8,7 @@
 #include "fmod.h"
 #include "fmod_memory.h"
 #include "fmod_os_misc.h"
+#include "fmod_output_coreaudio.h"
 
 #include <dispatch/dispatch.h>
 #include <dlfcn.h>
@@ -405,7 +406,10 @@ FMOD_RESULT FMOD_OS_Library_Free(FMOD_OS_LIBRARY *handle)
 
 FMOD_RESULT FMOD_OS_CheckDriverList(bool *devicelistchanged)
 {
-    /* TODO_MAC (E6): report CoreAudio device list changes. */
+#ifdef FMOD_SUPPORT_COREAUDIO
+    return FMOD_OS_CoreAudio_CheckDriverList(devicelistchanged);
+#else
     *devicelistchanged = false;
     return FMOD_OK;
+#endif
 }
