@@ -179,9 +179,77 @@ elseif (WIN32)
             XvidDecoder
     )
 else ()
-    target_sources(DivxDecoder
+    # The DivxDecoder API comes from Tools/XvidDecoder, built as a static library over the xvidcore below.
+    target_link_libraries(DivxDecoder
         INTERFACE
-            ${CMAKE_CURRENT_SOURCE_DIR}/DivxDecoder/mac/DivxDecoder.cpp
+            XvidDecoder
+    )
+endif ()
+
+if (APPLE)
+    # xvidcore 1.3.7 (GPL, see xvidcore/licenses/xvid.txt), plain C sources only: SRC_GENERIC from its
+    # build/generic/sources.inc, no assembly. Windows keeps the prebuilt xvidcore/lib/x64/libxvidcore.lib.
+    add_library(xvidcore STATIC
+            xvidcore/src/bitstream/bitstream.c
+            xvidcore/src/bitstream/cbp.c
+            xvidcore/src/bitstream/mbcoding.c
+            xvidcore/src/dct/fdct.c
+            xvidcore/src/dct/idct.c
+            xvidcore/src/dct/simple_idct.c
+            xvidcore/src/decoder.c
+            xvidcore/src/encoder.c
+            xvidcore/src/image/colorspace.c
+            xvidcore/src/image/font.c
+            xvidcore/src/image/image.c
+            xvidcore/src/image/interpolate8x8.c
+            xvidcore/src/image/postprocessing.c
+            xvidcore/src/image/qpel.c
+            xvidcore/src/image/reduced.c
+            xvidcore/src/motion/estimation_bvop.c
+            xvidcore/src/motion/estimation_common.c
+            xvidcore/src/motion/estimation_gmc.c
+            xvidcore/src/motion/estimation_pvop.c
+            xvidcore/src/motion/estimation_rd_based.c
+            xvidcore/src/motion/estimation_rd_based_bvop.c
+            xvidcore/src/motion/gmc.c
+            xvidcore/src/motion/motion_comp.c
+            xvidcore/src/motion/sad.c
+            xvidcore/src/motion/vop_type_decision.c
+            xvidcore/src/plugins/plugin_2pass1.c
+            xvidcore/src/plugins/plugin_2pass2.c
+            xvidcore/src/plugins/plugin_dump.c
+            xvidcore/src/plugins/plugin_lumimasking.c
+            xvidcore/src/plugins/plugin_psnr.c
+            xvidcore/src/plugins/plugin_psnrhvsm.c
+            xvidcore/src/plugins/plugin_single.c
+            xvidcore/src/plugins/plugin_ssim.c
+            xvidcore/src/prediction/mbprediction.c
+            xvidcore/src/quant/quant_h263.c
+            xvidcore/src/quant/quant_matrix.c
+            xvidcore/src/quant/quant_mpeg.c
+            xvidcore/src/utils/emms.c
+            xvidcore/src/utils/mbtransquant.c
+            xvidcore/src/utils/mem_align.c
+            xvidcore/src/utils/mem_transfer.c
+            xvidcore/src/utils/timer.c
+            xvidcore/src/xvid.c
+    )
+
+    target_include_directories(xvidcore
+        PUBLIC
+            ${CMAKE_CURRENT_SOURCE_DIR}/xvidcore/include
+    )
+
+    target_compile_definitions(xvidcore
+        PRIVATE
+            ARCH_IS_GENERIC
+            ARCH_IS_64BIT
+            ARCH_IS_LITTLE_ENDIAN
+    )
+
+    target_compile_options(xvidcore
+        PRIVATE
+            -w
     )
 endif ()
 

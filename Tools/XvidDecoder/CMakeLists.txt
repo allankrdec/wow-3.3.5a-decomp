@@ -1,3 +1,22 @@
+if (NOT WIN32)
+    # macOS: the same decoder as a static library over ThirdParty's xvidcore target; DivxDecoder links it.
+    add_library(XvidDecoder STATIC
+        XvidDecoder.cpp
+    )
+
+    target_include_directories(XvidDecoder
+        PRIVATE
+            ${CMAKE_SOURCE_DIR}
+    )
+
+    target_link_libraries(XvidDecoder
+        PRIVATE
+            xvidcore
+    )
+
+    return()
+endif ()
+
 add_library(XvidDecoder SHARED
     XvidDecoder.cpp
     XvidDecoder.def
