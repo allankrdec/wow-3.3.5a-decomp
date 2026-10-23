@@ -31,7 +31,7 @@
 ✅ CMake com plataforma macOS (arm64, `MACOSX_BUNDLE`, frameworks, pilha de 8 MB)
 ✅ Filtragem central das pastas `Win32/`, `Win64/`, `Mac/` e de `mac-excluded.txt`
 ✅ Terceiros em arm64 (zlib, bzip2, lzma, expat, FreeType, pcre, jpeg, lua)
-⬜ xvidcore em arm64 (sem código-fonte no repositório; movido para o E7)
+✅ xvidcore em arm64 (código C do xvidcore 1.3.7 em `ThirdParty/xvidcore/src`, sem assembly)
 ✅ sse2neon v1.8.0
 ✅ FMOD compilando com `PLATFORM_MAC` e saída NOSOUND
 ✅ `gen-mac-stubs.py` e `TODO_MAC()`; pastas `Mac/` com stubs para todo o `Win64/`
@@ -69,7 +69,7 @@
 ✅ Cursor do sistema escondido sobre a janela (o jogo desenha o próprio cursor)
 ✅ Texturas "limitadas a 256x256": não é limite do Mac. `GL_MAX_TEXTURE_SIZE` = 16384 e as texturas sobem inteiras; o `SET baseMip "1"` do `Config.wtf` copiado corta um nível de mip (512 → 256), como no Windows. A linha 693 do `VideoHardware.dbc` (VID 0xFFFF, DID 3) tem `baseMipLevel` 0
 ✅ Vsync: o GL sobre Metal não segura o `flushBuffer` no refresh (swap interval 1 dá ~80 fps em 60 Hz, com a janela na frente ou atrás); o present espera o próximo refresh por um `CVDisplayLink`. 60 fps com `gxVSync 1`, sem limite com `gxVSync 0` (`WOWDECOMP_MAC_FPSLOG=1` mostra)
-⬜ (opcional) Patches customizados `patch-6`/`patch-7` alteram o GlueXML e falham a assinatura: para usá-los, compilar com `-DWOWDECOMP_DISABLE_SIGNATURE_CHECKS=ON`
+✅ Jogo traduzido com os patches `patch-6`/`patch-7`: build com `-DWOWDECOMP_DISABLE_SIGNATURE_CHECKS=ON` (padrão no `scripts/jogar-mac.command`)
 
 ## 🔶 E5: Rede e login
 ✅ Thread de rede (`WowConnectionNet`) com `poll()` e pipe para acordar
@@ -93,14 +93,15 @@
 ✅ Conferido no jogo pelo usuário: música e efeitos tocando
 ⬜ (fora do escopo por enquanto) Gravação para o voice chat
 
-## ⬜ E7: Jogabilidade completa
-⬜ Mouse-look sem aceleração; cursor recapturado no alt-tab
-⬜ Fullscreen como janela sem borda; resize, minimizar, foco, vários monitores, Retina
-⬜ Atalhos (Cmd+Q, Cmd+Tab, Cmd como Ctrl opcional)
-⬜ Clipboard, abrir URL, `NSAlert` (hoje `OsGuiMessageBox` só escreve no stderr)
-⬜ Crash handler (`sigaction` + `backtrace`) e `SErrCatchUnhandledExceptions`
-⬜ HTTP (`URL.cpp`, `OsURLDownload`)
-⬜ Filmes (xvidcore arm64 + XvidDecoder)
+## 🔶 E7: Jogabilidade completa
+✅ Mouse-look sem aceleração; cursor recapturado no alt-tab (conferir com mouse real)
+✅ Fullscreen como janela sem borda no monitor da janela; resize, minimizar, foco, troca ao vivo; Retina em pontos
+✅ Atalhos: menu do app, Cmd+Q (como Alt+F4), Cmd+H, Cmd+M; Cmd como Ctrl com `WOWDECOMP_MAC_CMD_AS_CTRL=1`
+✅ Clipboard (`NSPasteboard`), abrir URL (`NSWorkspace`), `NSAlert`
+✅ Crash handler (`sigaction`, pilha alternativa, registradores arm64, pilha de todas as threads) → `Errors/<data> Crash.txt`
+✅ HTTP (`URL.mm`, `OsURLDownload.mm` com `NSURLSession`); `_snprintf` aceita `%I64d`
+✅ Filmes (xvidcore arm64 + XvidDecoder): 6.402 frames decodificados no `MovieTest`
+⬜ Conferir uma cinemática dentro do jogo (vídeo + som)
 ⬜ Gamma (opcional)
 
 ## ⬜ E8: Empacotamento e estabilização

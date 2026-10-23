@@ -4,6 +4,8 @@
 # - Se o .app ainda não existe, configura e compila antes (CMake + Ninja em build-mac/).
 # - Com --build, recompila mesmo que o .app já exista.
 # - O jogo procura Data/, WTF/ e Interface/ ao lado do .app, em bin/Mac/.
+# - Compila com WOWDECOMP_DISABLE_SIGNATURE_CHECKS=ON, como o cliente Windows usado com os patches de tradução
+#   (patch-6/patch-7): sem isso o cliente recusa a interface de login modificada.
 
 set -euo pipefail
 
@@ -16,7 +18,7 @@ cd "$ROOT"
 if [ ! -d "$APP" ] || [ "${1:-}" = "--build" ]; then
     echo "Compilando o cliente (pode levar alguns minutos na primeira vez)..."
     if [ ! -f "$BUILD/build.ninja" ]; then
-        cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Debug
+        cmake -S "$ROOT" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Debug -DWOWDECOMP_DISABLE_SIGNATURE_CHECKS=ON
     fi
     cmake --build "$BUILD" --target Wow
 fi
