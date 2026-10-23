@@ -3,17 +3,15 @@
 #include <cstdlib>
 #include <cstring>
 #include <pwd.h>
-#include <spawn.h>
-#include <crt_externs.h>
 #include <unistd.h>
 #include <mach-o/dyld.h>
 #include <mach-o/getsect.h>
 #include <sys/sysctl.h>
-#include <sys/wait.h>
 #if defined(__x86_64__)
 #include <cpuid.h>
 #endif
 #include "Engine/Source/Base/Platform/Mac/MacSync.h"
+#include "Engine/Source/Os/Mac/MacWindow.h"
 #include "Engine/Source/Os/OsFile.h"
 #include "Engine/Source/Os/Processor.h"
 #include "Engine/Source/Os/System.h"
@@ -504,25 +502,9 @@ int32_t OsLaunchURL(const char* url) {
 
     *dst = '\0';
 
-    // ShellExecute "open": LaunchServices through /usr/bin/open opens the URL in the default browser, or a file://
-    // URL with its application.
-    char openPath[] = "/usr/bin/open";
-    char* argv[] = { openPath, file, nullptr };
-    pid_t pid;
-
-    if (posix_spawn(&pid, openPath, nullptr, nullptr, argv, *_NSGetEnviron())) {
-        return 0;
-    }
-
-    int status;
-
-    while (waitpid(pid, &status, 0) < 0) {
-        if (errno != EINTR) {
-            return 0;
-        }
-    }
-
-    return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+    // ShellExecute "open": LaunchServices (NSWorkspace) opens the URL in the default browser, or a file with its
+    // application.
+    return MacOpenURL(file) ? 1 : 0;
 }
 
 // Win64: 0x0086B9A0

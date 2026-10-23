@@ -264,7 +264,7 @@ static HWND CreateGameWindow(CGxFormat& format, void* param) {
     if (!windowed) {
         int32_t width = 0;
         int32_t height = 0;
-        MacMainScreenSize(&width, &height);
+        MacGameScreenSize(&width, &height);
 
         if (width && height) {
             format.m_size.x = width;

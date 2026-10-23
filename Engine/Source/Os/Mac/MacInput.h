@@ -9,11 +9,13 @@
 
 void MacInputWindowEvent(MacWindowEvent event, int32_t width, int32_t height);
 void MacInputQuit();
-void MacInputKey(uint16_t keyCode, bool down);
+// modifierFlags: the NSEvent's, to tell Command shortcuts apart.
+void MacInputKey(uint16_t keyCode, bool down, uint64_t modifierFlags);
 void MacInputModifiers(uint16_t keyCode, uint64_t modifierFlags);
 void MacInputChar(uint32_t character);
 void MacInputMouseButton(int32_t buttonNumber, bool down, int32_t x, int32_t y);
-void MacInputMouseMove(int32_t x, int32_t y, double deltaX, double deltaY, bool inside);
+// delta: the accelerated motion (NSEvent deltaX/Y); raw: the unaccelerated device motion, 0 when the event has none.
+void MacInputMouseMove(int32_t x, int32_t y, double deltaX, double deltaY, double rawX, double rawY, bool inside);
 void MacInputMouseWheel(double delta, bool precise, int32_t x, int32_t y);
 void MacInputEventPoll();
 

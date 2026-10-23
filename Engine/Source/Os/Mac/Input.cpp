@@ -4,12 +4,18 @@
 // PeekMessage/DispatchMessage, and the game view reports keys, characters, mouse and window events through the
 // MacInput* functions at the end of this file, which do what the WM_* cases of the Win64 OsWindowProc do.
 // Differences with Win64:
-// - Keys are macOS virtual key codes (kVK_*); ConvertKeyCode maps them to the same KEY_* values. Command is not
-//   mapped (no Cmd as Ctrl yet). Modifier keys come from flagsChanged with their exact side.
+// - Keys are macOS virtual key codes (kVK_*); ConvertKeyCode maps them to the same KEY_* values. Modifier keys
+//   come from flagsChanged with their exact side. Command is not a game key: Command combinations are AppKit's
+//   (Cmd+Q is the Alt+F4 of Windows, see MacWindow.mm) and the others are dropped, unless MacCommandAsControl
+//   turns the Command keys into the Control keys.
+// - Losing the focus releases the keys still down (KEY_UP for each), since their key ups go to another application.
 // - Characters arrive as Unicode code points (insertText:), so the ANSI code page tables are not needed.
 // - The window frame (title bar drag, resize, minimize) is Cocoa's, so the non-client drag code is gone.
-// - Relative mouse mode freezes the cursor (CGAssociateMouseAndMouseCursorPosition) and reads event deltas instead
-//   of re-centering the cursor; the system mouse speed is never changed, OsInputSetMouseSpeed scales those deltas.
+// - Relative mouse mode freezes and hides the cursor (CGAssociateMouseAndMouseCursorPosition) on the point where it
+//   was and reads event deltas instead of re-centering the cursor; leaving the mode puts the cursor back on that
+//   point. The deltas are the unaccelerated device motion (kCGEventUnacceleratedPointerMovementX/Y), like Windows
+//   without "Enhance pointer precision"; WOWDECOMP_MAC_MOUSE_ACCEL=1 uses the accelerated motion instead. The system
+//   mouse speed is never changed: OsInputSetMouseSpeed scales those deltas.
 
 #include <Carbon/Carbon.h>
 #include <cmath>
@@ -68,6 +74,10 @@ static double s_wheelRemainder;
 static double s_relativeRemainderX;
 
 static double s_relativeRemainderY;
+
+static int32_t s_mouseAccel = -1;
+
+static int32_t s_mouseLog = -1;
 
 static const uint16_t s_functionKeyCodes[12] = {
     kVK_F1, kVK_F2, kVK_F3, kVK_F4, kVK_F5, kVK_F6, kVK_F7, kVK_F8, kVK_F9, kVK_F10, kVK_F11, kVK_F12,
@@ -319,9 +329,16 @@ static int32_t ConvertKeyCode(uint32_t vkey, KEY* key) {
             *key = KEY_NUMPAD_EQUALS;
             return 1;
 
-        // Command, Function and the media keys have no KEY_ value.
+        // Command as Control (MacCommandAsControl), the Control key of the same side.
         case kVK_Command:
+            *key = KEY_LCONTROL;
+            return MacCommandAsControl();
+
         case kVK_RightCommand:
+            *key = KEY_RCONTROL;
+            return MacCommandAsControl();
+
+        // Function and the media keys have no KEY_ value.
         case kVK_Function:
             return 0;
 
@@ -345,6 +362,11 @@ static int32_t ConvertKeyCode(uint32_t vkey, KEY* key) {
 // Win64: 0x008691C0
 static int32_t ConvertKeyToVirtualKey(KEY key, uint32_t* vkey) {
     for (uint32_t i = 0; i < sizeof(s_keyDown); i++) {
+        // The Control keys are the Control keys; OsInputIsKeyDown adds Command as Control.
+        if (i == kVK_Command || i == kVK_RightCommand) {
+            continue;
+        }
+
         KEY converted;
         if (ConvertKeyCode(i, &converted) && converted == key) {
             *vkey = i;
@@ -419,7 +441,21 @@ int32_t OsInputIsKeyDown(KEY key) {
         return 0;
     }
 
-    return s_keyDown[vkey] != 0;
+    if (s_keyDown[vkey]) {
+        return 1;
+    }
+
+    if (MacCommandAsControl()) {
+        if (key == KEY_LCONTROL) {
+            return s_keyDown[kVK_Command] != 0;
+        }
+
+        if (key == KEY_RCONTROL) {
+            return s_keyDown[kVK_RightCommand] != 0;
+        }
+    }
+
+    return 0;
 }
 
 // Win64: 0x00869670
@@ -520,6 +556,13 @@ static void CenterMouse() {
 
     s_relativeRemainderX = 0.0;
     s_relativeRemainderY = 0.0;
+
+    // Already frozen: it is still on the saved point. Otherwise (the focus came back, the window changed) the
+    // cursor may be anywhere, like the SetCursorPos of Win64.
+    if (MacIsMouseAssociated()) {
+        MacGameWindowSetMousePosition(s_mousePos.x, s_mousePos.y);
+    }
+
     MacSetMouseAssociated(false);
 }
 
@@ -735,6 +778,12 @@ void MacInputWindowEvent(MacWindowEvent event, int32_t width, int32_t height) {
         case MacWindowEvent_Resize:
         case MacWindowEvent_Restore:
             s_windowSize = 1;
+
+            // WM_SIZE: the frozen cursor must stay over the (moved or resized) view.
+            if (s_appActive && s_osMouseMode == OS_MOUSE_MODE_RELATIVE) {
+                MacSetMouseAssociated(true);
+                CenterMouse();
+            }
             break;
 
         case MacWindowEvent_Minimize:
@@ -753,9 +802,19 @@ void MacInputWindowEvent(MacWindowEvent event, int32_t width, int32_t height) {
                 OsQueuePut(OS_INPUT_CAPTURE_CHANGED, 0, x, y, 0);
             }
 
+            // Key ups of an inactive window never arrive: release what is still down, or the character would keep
+            // running after Cmd+Tab.
+            if (!active) {
+                for (uint32_t i = 0; i < sizeof(s_keyDown); i++) {
+                    KEY key;
+                    if (s_keyDown[i] && ConvertKeyCode(i, &key)) {
+                        OsQueuePut(OS_INPUT_KEY_UP, key, 1, 0, 0);
+                    }
+                }
+            }
+
             s_appActive = active;
             s_osButtonState = 0;
-            // Key ups of an inactive window never arrive.
             std::memset(s_keyDown, 0, sizeof(s_keyDown));
             OsQueuePut(OS_INPUT_FOCUS, s_appActive != 0, 0, 0, 0);
 
@@ -785,7 +844,7 @@ void MacInputQuit() {
 }
 
 // WM_KEYDOWN / WM_KEYUP. Auto-repeat sends more key downs, like Windows.
-void MacInputKey(uint16_t keyCode, bool down) {
+static void QueueKey(uint16_t keyCode, bool down) {
     if (keyCode < sizeof(s_keyDown)) {
         s_keyDown[keyCode] = down;
     }
@@ -796,6 +855,18 @@ void MacInputKey(uint16_t keyCode, bool down) {
     }
 
     OsQueuePut(down ? OS_INPUT_KEY_DOWN : OS_INPUT_KEY_UP, key, 1, 0, 0);
+}
+
+void MacInputKey(uint16_t keyCode, bool down, uint64_t modifierFlags) {
+    // Command + key without Command as Control: a system shortcut, not a game key. The key up of a key pressed
+    // that way is dropped too; one held down before Command still gets its key up.
+    if ((modifierFlags & (1 << 20)) && !MacCommandAsControl()) {
+        if (down || keyCode >= sizeof(s_keyDown) || !s_keyDown[keyCode]) {
+            return;
+        }
+    }
+
+    QueueKey(keyCode, down);
 }
 
 // flagsChanged: the modifier keys, which Windows sends as WM_KEYDOWN / WM_KEYUP.
@@ -843,17 +914,32 @@ void MacInputModifiers(uint16_t keyCode, uint64_t modifierFlags) {
             anyBit = 1 << 19;
             break;
 
+        // Not game keys unless MacCommandAsControl (ConvertKeyCode); s_keyDown follows them anyway.
+        case kVK_Command:
+            sideBit = 0x8;
+            bothSides = 0x8 | 0x10;
+            anyBit = 1 << 20;
+            break;
+
+        case kVK_RightCommand:
+            sideBit = 0x10;
+            bothSides = 0x8 | 0x10;
+            anyBit = 1 << 20;
+            break;
+
         case kVK_CapsLock:
             // One flagsChanged per toggle; Windows sees a press and a release.
-            MacInputKey(keyCode, true);
-            MacInputKey(keyCode, false);
+            QueueKey(keyCode, true);
+            QueueKey(keyCode, false);
             return;
 
+        case kVK_Function:
+            sideBit = 0;
+            bothSides = 0;
+            anyBit = 1 << 23;
+            break;
+
         default:
-            // Command and Function: not game keys yet.
-            if (keyCode < sizeof(s_keyDown)) {
-                s_keyDown[keyCode] = !s_keyDown[keyCode];
-            }
             return;
     }
 
@@ -862,7 +948,7 @@ void MacInputModifiers(uint16_t keyCode, uint64_t modifierFlags) {
         return;
     }
 
-    MacInputKey(keyCode, down);
+    QueueKey(keyCode, down);
 }
 
 // WM_CHAR: one Unicode code point of typed text. Control characters (Enter, Tab, Backspace...) are skipped like
@@ -885,10 +971,27 @@ void MacInputMouseButton(int32_t buttonNumber, bool down, int32_t x, int32_t y) 
 }
 
 // WM_MOUSEMOVE. inside: the point is in the view (Windows only sends client moves without capture).
-void MacInputMouseMove(int32_t x, int32_t y, double deltaX, double deltaY, bool inside) {
+void MacInputMouseMove(int32_t x, int32_t y, double deltaX, double deltaY, double rawX, double rawY, bool inside) {
     if (s_osMouseMode != OS_MOUSE_MODE_NORMAL) {
         if (!s_appActive) {
             return;
+        }
+
+        if (s_mouseAccel < 0) {
+            const char* accel = std::getenv("WOWDECOMP_MAC_MOUSE_ACCEL");
+            const char* log = std::getenv("WOWDECOMP_MAC_MOUSELOG");
+            s_mouseAccel = accel && *accel && *accel != '0' ? 1 : 0;
+            s_mouseLog = log && *log && *log != '0' ? 1 : 0;
+        }
+
+        if (s_mouseLog) {
+            std::fprintf(stderr, "MacInput: relative delta %.2f %.2f raw %.2f %.2f\n", deltaX, deltaY, rawX, rawY);
+        }
+
+        // Events without device motion (synthesized ones, some tablets) only have the accelerated delta.
+        if (!s_mouseAccel && (rawX != 0.0 || rawY != 0.0 || (deltaX == 0.0 && deltaY == 0.0))) {
+            deltaX = rawX;
+            deltaY = rawY;
         }
 
         double scale = s_mouseSpeed * 0.1;
