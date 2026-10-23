@@ -14,6 +14,7 @@
 #include <Carbon/Carbon.h>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -769,6 +770,7 @@ void MacInputWindowEvent(MacWindowEvent event, int32_t width, int32_t height) {
         }
 
         case MacWindowEvent_Close:
+            std::fprintf(stderr, "MacInput: window close requested\n");
             OsQueuePut(OS_INPUT_CLOSE, 0, 0, 0, 0);
             break;
 
@@ -778,6 +780,7 @@ void MacInputWindowEvent(MacWindowEvent event, int32_t width, int32_t height) {
 }
 
 void MacInputQuit() {
+    std::fprintf(stderr, "MacInput: application quit requested\n");
     s_quitRequested = 1;
 }
 
