@@ -49,7 +49,7 @@
 ✅ `port-mac/tests/DataTest`: 11.054 arquivos de MPQ, 7 DBCs e 10.307 BLPs, 0 falhas
 ✅ O cliente abre as 18 MPQs e para em "dispositivo de exibição" (começo do E4)
 
-## 🔶 E4: Janela, OpenGL e input
+## ✅ E4: Janela, OpenGL e input
 ✅ Funções WGL/Win32 do `CGxDeviceOpenGl.cpp` movidas sem mudança para `CGxDeviceOpenGL/Windows/` (122 funções conferidas por script)
 ✅ `CGxDeviceOpenGl` no Mac: contexto legado 2.1 (`NSOpenGLContext`), ponteiros GL via `dlsym`, swap interval, `flushBuffer`
 ✅ FBO no lugar de pbuffer
@@ -67,9 +67,9 @@
 ✅ Cenário 3D da tela de login e da seleção de personagem: bug da decompilação em `IXformSetProjection` (bit 31 em vez do bit 7) encolhia toda cena 3D do backend OpenGL em 5x; corrigido (afeta também o `-opengl` do Windows; selo `VERIFY` a refazer)
 ✅ Conferido à mão: digitar usuário e senha, clicar nos botões
 ✅ Cursor do sistema escondido sobre a janela (o jogo desenha o próprio cursor)
-⬜ Texturas dos modelos limitadas a 256x256 no Mac
-⬜ Vsync (swap interval 1 deu ~92 fps numa tela de 60 Hz)
-⬜ Patches customizados `patch-6`/`patch-7` alteram o GlueXML e falham a assinatura (rodar com `WOWDECOMP_DISABLE_SIGNATURE_CHECKS` ou sem eles)
+✅ Texturas "limitadas a 256x256": não é limite do Mac. `GL_MAX_TEXTURE_SIZE` = 16384 e as texturas sobem inteiras; o `SET baseMip "1"` do `Config.wtf` copiado corta um nível de mip (512 → 256), como no Windows. A linha 693 do `VideoHardware.dbc` (VID 0xFFFF, DID 3) tem `baseMipLevel` 0
+✅ Vsync: o GL sobre Metal não segura o `flushBuffer` no refresh (swap interval 1 dá ~80 fps em 60 Hz, com a janela na frente ou atrás); o present espera o próximo refresh por um `CVDisplayLink`. 60 fps com `gxVSync 1`, sem limite com `gxVSync 0` (`WOWDECOMP_MAC_FPSLOG=1` mostra)
+⬜ (opcional) Patches customizados `patch-6`/`patch-7` alteram o GlueXML e falham a assinatura: para usá-los, compilar com `-DWOWDECOMP_DISABLE_SIGNATURE_CHECKS=ON`
 
 ## 🔶 E5: Rede e login
 ✅ Thread de rede (`WowConnectionNet`) com `poll()` e pipe para acordar

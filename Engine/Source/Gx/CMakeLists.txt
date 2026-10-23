@@ -27,6 +27,7 @@ if (APPLE)
     target_link_libraries(Gx
         PRIVATE
             "-framework Cocoa"
+            "-framework CoreVideo"
             "-framework OpenGL"
     )
 endif ()

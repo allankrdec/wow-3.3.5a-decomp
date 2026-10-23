@@ -77,7 +77,9 @@ Trabalho:
 
 1. Criar `CGxDeviceOpenGL/Mac/` (ou `#if`) com:
    - `NSOpenGLContext`/`CGLContextObj` na `NSView` fornecida pelo `Os/Mac`;
-   - `CGLSetParameter(kCGLCPSwapInterval)` para o vsync;
+   - `CGLSetParameter(kCGLCPSwapInterval)` para o vsync; na prática o GL sobre Metal não respeita o swap interval
+     (~80 fps numa tela de 60 Hz), então o `ScenePresent` do Mac espera o próximo refresh contado por um
+     `CVDisplayLink` quando o vsync está ligado;
    - `flushBuffer` no present.
 2. Trocar pbuffer por FBO, que o backend já sabe usar quando `EXT_framebuffer_object` existe. Verificar se ainda
    há algum caminho que obrigue pbuffer.

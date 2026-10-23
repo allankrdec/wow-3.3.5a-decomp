@@ -10,13 +10,23 @@
 //   FBOs (IDeviceSetRenderTargetFBO); otherwise IDeviceSetRenderTargetCopy copies from the back buffer.
 // - Display modes: the display mode never changes; fullscreen is a borderless window over the main screen.
 // - Gamma: hardware gamma is not used (the ramp is kept, nothing is sent to the display).
+// - Vsync: the GL swap interval is set, but the GL-over-Metal renderer does not hold flushBuffer to the refresh
+//   (swap interval 1 gives ~80 fps on a 60 Hz screen, frontmost or not), so with vsync on ScenePresent also waits for
+//   the next refresh of the window's screen, counted by a CVDisplayLink.
 // All of it runs on the main thread, like the rest of the Mac window code.
 
 #define GL_SILENCE_DEPRECATION
 
 #import <Cocoa/Cocoa.h>
+#include <CoreVideo/CoreVideo.h>
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <mach/mach_time.h>
 #include "Engine/Source/Gx/CGxDeviceOpenGL/CGxDeviceOpenGl.h"
 #include "Engine/Source/Gx/CGxDeviceOpenGL/CGxDeviceOpenGlPlatform.h"
 #include "Engine/Source/Gx/CGxTex.h"
@@ -26,6 +36,76 @@
 static bool s_extensionsBound;
 
 static int32_t s_deviceChanging;
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
+// Vsync: s_refreshCount counts the refreshes of the screen (CVDisplayLink thread); ScenePresent waits until it passes
+// the count of the previous present.
+static CVDisplayLinkRef s_displayLink;
+static std::mutex s_refreshMutex;
+static std::condition_variable s_refreshSignal;
+static uint64_t s_refreshCount;
+static uint64_t s_presentRefresh;
+static bool s_vsync;
+
+static CVReturn DisplayLinkCallback(CVDisplayLinkRef, const CVTimeStamp*, const CVTimeStamp*, CVOptionFlags, CVOptionFlags*, void*) {
+    {
+        std::lock_guard<std::mutex> lock(s_refreshMutex);
+        s_refreshCount++;
+    }
+
+    s_refreshSignal.notify_all();
+    return kCVReturnSuccess;
+}
+
+// Starts counting the refreshes of the screen showing the view, or stops it when vsync is off.
+static void VsyncSet(bool vsync, NSView* view) {
+    s_vsync = vsync;
+
+    if (!vsync) {
+        if (s_displayLink) {
+            CVDisplayLinkStop(s_displayLink);
+        }
+
+        return;
+    }
+
+    if (!s_displayLink) {
+        if (CVDisplayLinkCreateWithActiveCGDisplays(&s_displayLink) != kCVReturnSuccess) {
+            s_displayLink = nullptr;
+            s_vsync = false;
+            return;
+        }
+
+        CVDisplayLinkSetOutputCallback(s_displayLink, DisplayLinkCallback, nullptr);
+    }
+
+    NSScreen* screen = [[view window] screen] ?: [NSScreen mainScreen];
+    NSNumber* displayID = [[screen deviceDescription] objectForKey:@"NSScreenNumber"];
+
+    if (displayID) {
+        CVDisplayLinkSetCurrentCGDisplay(s_displayLink, [displayID unsignedIntValue]);
+    }
+
+    if (!CVDisplayLinkIsRunning(s_displayLink)) {
+        CVDisplayLinkStart(s_displayLink);
+    }
+}
+
+// Waits for the first refresh after the previous present. A frame that took longer than a refresh does not wait.
+// The timeout covers a display that stops refreshing (asleep, disconnected).
+static void VsyncWait() {
+    if (!s_vsync) {
+        return;
+    }
+
+    std::unique_lock<std::mutex> lock(s_refreshMutex);
+    s_refreshSignal.wait_for(lock, std::chrono::milliseconds(100), [] { return s_refreshCount > s_presentRefresh; });
+    s_presentRefresh = s_refreshCount;
+}
+
+#pragma clang diagnostic pop
 
 static NSOpenGLContext* GlContext(HGLRC context) {
     return reinterpret_cast<NSOpenGLContext*>(context);
@@ -235,6 +315,7 @@ void CGxDeviceOpenGl::IDevRemoveGlContext() {
         this->IQueryRelease();
         UnbindGlExtensions();
 
+        VsyncSet(false, nil);
         [NSOpenGLContext clearCurrentContext];
         [context clearDrawable];
         [context release];
@@ -312,6 +393,7 @@ int32_t CGxDeviceOpenGl::IDevAttachGlContext(const CGxFormat& format) {
 
         GLint swapInterval = format.m_vsync != 0;
         [context setValues:&swapInterval forParameter:NSOpenGLContextParameterSwapInterval];
+        VsyncSet(swapInterval != 0, view);
 
         this->ISetCaps(format);
         this->DeviceCreatePbuffer();
@@ -514,6 +596,51 @@ void CGxDeviceOpenGl::CapsWindowSizeInScreenCoords(CRect& rect) {
     }
 }
 
+// WOWDECOMP_MAC_FPSLOG=1: prints the presented frames per second (and the swap interval in effect) to stderr once
+// a second.
+static void LogFrameRate(NSOpenGLContext* context) {
+    static int32_t s_enabled = -1;
+
+    if (s_enabled < 0) {
+        const char* value = getenv("WOWDECOMP_MAC_FPSLOG");
+        s_enabled = value && *value && *value != '0';
+    }
+
+    if (!s_enabled) {
+        return;
+    }
+
+    static mach_timebase_info_data_t s_timebase;
+    static uint64_t s_start;
+    static uint32_t s_frames;
+
+    if (!s_timebase.denom) {
+        mach_timebase_info(&s_timebase);
+    }
+
+    uint64_t now = mach_absolute_time();
+
+    if (!s_start) {
+        s_start = now;
+    }
+
+    s_frames++;
+
+    double seconds = static_cast<double>(now - s_start) * s_timebase.numer / s_timebase.denom / 1e9;
+
+    if (seconds >= 1.0) {
+        GLint swapInterval = -1;
+        [context getValues:&swapInterval forParameter:NSOpenGLContextParameterSwapInterval];
+
+        NSWindow* window = [[context view] window];
+        bool visible = window && ([window occlusionState] & NSWindowOcclusionStateVisible);
+
+        fprintf(stderr, "fps: %.1f (swap interval %d, window %s)\n", s_frames / seconds, swapInterval, visible ? "visible" : "occluded");
+        s_start = now;
+        s_frames = 0;
+    }
+}
+
 void CGxDeviceOpenGl::ScenePresent() {
     int32_t screenShot = this->m_scrShotClick;
     CGxDevice::ScenePresent();
@@ -525,10 +652,13 @@ void CGxDeviceOpenGl::ScenePresent() {
     this->ICursorDraw();
 
     if (this->m_hwMasterEnables & 0x40) {
+        VsyncWait();
         [GlContext(this->m_hglrc) flushBuffer];
     } else {
         glFinish();
     }
+
+    LogFrameRate(GlContext(this->m_hglrc));
 
     this->WaitForFPSCap();
     this->IShaderConstantsClear();
