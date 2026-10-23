@@ -88,6 +88,59 @@ logger off in `WowClient` with `-DWOWCLIENT_CRASH_LOG=OFF`.
 2. Point `Data/<locale>/realmlist.wtf` at the server you want to connect to.
 3. Start `bin/Win/WowClient64.exe` (or `Wow64.exe`).
 
+## macOS (Apple Silicon)
+
+The same tree builds a native arm64 macOS client. It renders through the OpenGL backend (a legacy 2.1
+context, the one `-opengl` uses on Windows), plays sound through FMOD's CoreAudio output and decodes movies
+with xvidcore. Intel Macs are not supported.
+
+### Requirements
+
+- macOS 11 or newer on Apple Silicon
+- Xcode or the Command Line Tools (`xcode-select --install`)
+- CMake and Ninja (`brew install cmake ninja`)
+- A World of Warcraft **3.3.5a (12340)** client (the Windows data works as is)
+
+### Building
+
+```sh
+cmake -S . -B build-mac -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build-mac --target Wow
+```
+
+The client is written to `bin/Mac/World of Warcraft.app`, signed ad-hoc. Add
+`-DWOWDECOMP_DISABLE_SIGNATURE_CHECKS=ON` to load modified data, such as translation patches.
+
+### Running
+
+1. Put the `Data` folder of your 3.3.5a client next to the app, as `bin/Mac/Data/`. A symbolic link works:
+   `ln -s "/path/to/World of Warcraft 3.3.5a/Data" bin/Mac/Data`.
+2. Point `Data/<locale>/realmlist.wtf` at your server.
+3. Open `World of Warcraft.app`, or run `scripts/jogar-mac.command`, which builds the app first if needed.
+
+The game reads and writes `WTF/`, `Interface/AddOns/`, `Cache/`, `Screenshots/`, `Logs/` and `Errors/` in the
+folder that contains the app, like the Windows client does next to the executable. Settings that Windows keeps
+in the registry go to `~/Library/Application Support/wowdecomp/Registry.ini`.
+
+The client reports itself as Windows (`'Win'`) to the server, since private servers expect the Windows
+build. Build with `-DCMAKE_CXX_FLAGS=-DWOWDECOMP_REPORT_OS=0x4F5358` to report `'OSX'` like the original Mac
+client.
+
+### Environment variables
+
+| Variable | Effect |
+|---|---|
+| `WOWDECOMP_MAC_CMD_AS_CTRL=1` | Cmd works as Ctrl in key bindings (by default Cmd only drives the app menu: Cmd+Q, Cmd+H, Cmd+M) |
+| `WOWDECOMP_MAC_MOUSE_ACCEL=1` | Mouse-look follows the accelerated pointer motion instead of the raw device motion |
+| `WOWDECOMP_MAC_FPSLOG=1` | Print the frame rate to stderr once a second |
+| `WOWDECOMP_MAC_BACKGROUND=1` | Keep the window behind other windows without taking focus (for automated runs) |
+
+### Not supported on macOS
+
+- Voice chat recording
+- Battle.net account login (the Grunt login of private servers works)
+- The Direct3D backend: a request for Direct3D opens the OpenGL device
+
 ## Layout
 
 | Path | Contents |

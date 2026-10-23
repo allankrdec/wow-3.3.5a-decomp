@@ -103,12 +103,13 @@
 ✅ Filmes (xvidcore arm64 + XvidDecoder): 6.402 frames decodificados no `MovieTest`
 ⬜ Conferir uma cinemática dentro do jogo (vídeo + som)
 ⬜ Gamma (opcional)
+✅ (testado e desfeito a pedido) Voo em Kalimdor e nos Reinos do Leste: `scripts/liberar-voo-areatable.py` + `Data/patch-8-voar.MPQ.disable`; funciona, mas o mundo antigo não tem colisão nem construções completas para voo
 
-## ⬜ E8: Empacotamento e estabilização
-⬜ `.app` com ícone e assinatura ad-hoc
-⬜ Layout de pastas (`Data/`, `WTF/`, `Interface/AddOns`, `Cache/`, `Screenshots/`) ao lado do `.app`
+## 🔶 E8: Empacotamento e estabilização
+✅ `.app` com ícone (gerado no build a partir do `waystone.ico`, o mesmo dos `.exe`) e assinatura ad-hoc do bundle inteiro
+✅ Layout de pastas (`Data/`, `WTF/`, `Interface/AddOns`, `Cache/`, `Screenshots/`, `Logs/`, `Errors/`) ao lado do `.app`
 ⬜ Sessão de 4 h; desempenho em Dalaran, Wintergrasp e ICC
 ⬜ Teclados ABNT2 e US, teclas mortas, Option
-⬜ README de build e uso para Mac
+✅ README de build e uso para Mac (seção "macOS (Apple Silicon)" do `README.md`)
 
 ## ⬜ E9 (opcional): backend Metal
